@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+      xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+<!-- created with Free Online Sitemap Generator www.xml-sitemaps.com -->
+
+
+<url>
+  <loc>{{url("web_home_index")}}</loc>
+  <priority>1.00</priority>
+</url>
+<url>
+  <loc>{{url("wep_home_privacy")}}</loc>
+</url>
+<url>
+  <loc>{{url("wep_home_contact")}}</loc>
+</url>
+<url>
+  <loc>{{url("wep_home_refund")}}</loc>
+</url>
+<url>
+  <loc>{{url("wep_home_faq")}}</loc>
+</url>
+<url>
+  <loc>{{ url("wep_channel_index",{"category":"all","country":"all","order":"newest"})}}</loc>
+</url>
+<url>
+  <loc>{{ url("wep_movie_index",{"genre":"all","order":"newest"})}}</loc>
+</url>
+<url>
+  <loc>{{ url("wep_serie_index",{"genre":"all","order":"newest"})}}</loc>
+</url>
+<url>
+  <loc>{{url("wep_subscription_subscribe")}}</loc>
+</url>
+{% for genre in genres %}
+<url>
+  <loc>{{ url("wep_poster_filter",{"genre":genre.title,"order":"newest"})}}</loc>
+</url>
+{% endfor %}
+{% for category in categories %}
+<url>
+  <loc>{{ url("wep_channel_index",{"category":category.title,"country":"all","order":"newest"})}}</loc>
+</url>
+{% endfor %}
+{% for country in countries %}
+<url>
+  <loc>{{ url("wep_channel_index",{"country":country.title,"category":"all","order":"newest"})}}</loc>
+</url>
+{% endfor %}
+{% for poster in posters %}
+<url>
+  <loc>{{ (poster.type == "movie")? url("wep_movie_view",{"id":poster.id,"slug":poster.slug}):url("wep_serie_view",{"id":poster.id,"slug":poster.slug})}}</loc>
+  <lastmod>{{poster.created|date("Y-m-d")}}T{{poster.created|date("H:i:s")}}+00:00</lastmod>
+</url>
+{% endfor %}
+{% for channel in channels %}
+<url>
+  <loc>{{ url("wep_channel_view",{"id":channel.id,"slug":channel.slug})}}</loc>
+  <lastmod>{{channel.created|date("Y-m-d")}}T{{channel.created|date("H:i:s")}}+00:00</lastmod>
+</url>
+{% endfor %}
+
+</urlset>

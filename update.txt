@@ -1,0 +1,3 @@
+src/AppBundle/Controller/VersionController.php
+src/AppBundle/Form/AdsType.php
+src/AppBundle/Controller/SubscriptionController.php
