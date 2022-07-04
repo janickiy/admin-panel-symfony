@@ -1,5 +1,7 @@
-<?php 
+<?php
+
 namespace AppBundle\Controller;
+
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use AppBundle\Entity\Version;
 use AppBundle\Form\VersionType;
@@ -17,12 +19,15 @@ use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 
 class VersionController extends Controller
 {
-
+    /**
+     * @param Request $request
+     * @return mixed
+     */
     public function addAction(Request $request)
     {
-        $version= new Version();
-        $form = $this->createForm(VersionType::class,$version);
-        $em=$this->getDoctrine()->getManager();
+        $version = new Version();
+        $form = $this->createForm(VersionType::class, $version);
+        $em = $this->getDoctrine()->getManager();
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $em->persist($version);
@@ -30,66 +35,72 @@ class VersionController extends Controller
             $this->addFlash('success', 'Operation has been done successfully');
             return $this->redirect($this->generateUrl('app_version_index'));
         }
-        return $this->render("AppBundle:Version:add.html.twig",array("form"=>$form->createView()));
+        return $this->render("AppBundle:Version:add.html.twig", array("form" => $form->createView()));
     }
 
-    public function api_checkAction(Request $request,$code,$user,$token)
+    /**
+     * @param Request $request
+     * @param $code
+     * @param $user
+     * @param $token
+     * @return Response
+     */
+    public function api_checkAction(Request $request, $code, $user, $token)
     {
-        if ($token!=$this->container->getParameter('token_app')) {
-            throw new NotFoundHttpException("Page not found");  
+        if ($token != $this->container->getParameter('token_app')) {
+            throw new NotFoundHttpException("Page not found");
         }
-        $em=$this->getDoctrine()->getManager();
-        $version =   $em->getRepository("AppBundle:Version")->findOneBy(array("code"=>$code,"enabled"=>true));
-        $response=array();
-        $code="200";
-        $message="";
-        $errors=array();
-        if ($version==null) {
-            $versions =  $em->getRepository("AppBundle:Version")->findBy(array("enabled"=>true),array("code"=>"asc"));
-            $a=null;
+        $em = $this->getDoctrine()->getManager();
+        $version = $em->getRepository("AppBundle:Version")->findOneBy(array("code" => $code, "enabled" => true));
+        $response = array();
+        $code = "200";
+        $message = "";
+        $errors = array();
+        if ($version == null) {
+            $versions = $em->getRepository("AppBundle:Version")->findBy(array("enabled" => true), array("code" => "asc"));
+            $a = null;
             foreach ($versions as $key => $value) {
-                $a=$value;
+                $a = $value;
             }
-            if ($a==null) {
-                $code="200";
-                $response["name"]="update";
-                $response["value"]="App on update";
-            }else{
-                $code="202";
-                $response["name"]="update";
-                $response["value"]="New version available ".$a->getTitle() ." please update your application";
+            if ($a == null) {
+                $code = "200";
+                $response["name"] = "update";
+                $response["value"] = "App on update";
+            } else {
+                $code = "202";
+                $response["name"] = "update";
+                $response["value"] = "New version available " . $a->getTitle() . " please update your application";
                 $message = $a->getFeatures();
             }
-        }else{
-            $code="200";
-            $response["name"]="update";
-            $response["value"]="App on update";
+        } else {
+            $code = "200";
+            $response["name"] = "update";
+            $response["value"] = "App on update";
         }
         $response_user["name"] = "user";
         $response_user["value"] = "200";
         $response_user_subscription["name"] = "subscription";
         $response_user_subscription["value"] = "FALSE";
-        if ($user!=0) {
-            $user_obj =   $em->getRepository("UserBundle:User")->findOneBy(array("id"=>$user,"enabled"=>true));
-            if ($user_obj==null) {
+        if ($user != 0) {
+            $user_obj = $em->getRepository("UserBundle:User")->findOneBy(array("id" => $user, "enabled" => true));
+            if ($user_obj == null) {
                 $response_user["name"] = "user";
                 $response_user["value"] = "403";
-            }else{
+            } else {
                 $response_user["name"] = "user";
                 $response_user["value"] = "200";
                 $response_user_subscription["name"] = "subscription";
-                $response_user_subscription["value"] = ($user_obj->isSubscribed())?"TRUE":"FALSE";
+                $response_user_subscription["value"] = ($user_obj->isSubscribed()) ? "TRUE" : "FALSE";
             }
         }
 
 
+        $errors[] = $response;
+        $errors[] = $response_user;
+        $errors[] = $response_user_subscription;
 
-        $errors[]=$response;
-        $errors[]=$response_user;
-        $errors[]=$response_user_subscription;
 
-
-        $settings =   $em->getRepository("AppBundle:Settings")->findOneBy(array());
+        $settings = $em->getRepository("AppBundle:Settings")->findOneBy(array());
 
         $response_ads_rewarded_type["name"] = "ADMIN_REWARDED_AD_TYPE";
         $response_ads_rewarded_type["value"] = $settings->getBannerfacebookid();
@@ -99,7 +110,7 @@ class VersionController extends Controller
 
         $response_ads_interstitial_admob_id["name"] = "ADMIN_INTERSTITIAL_ADMOB_ID";
         $response_ads_interstitial_admob_id["value"] = $settings->getInterstitialadmobid();
-        
+
         $response_ads_interstitial_facebook_id["name"] = "ADMIN_INTERSTITIAL_FACEBOOK_ID";
         $response_ads_interstitial_facebook_id["value"] = $settings->getInterstitialfacebookid();
 
@@ -146,11 +157,10 @@ class VersionController extends Controller
 
 
         $response_stripe_enabled["name"] = "APP_STRIPE_ENABLED";
-        $response_stripe_enabled["value"] = ($settings->getStripe())? "TRUE":"FALSE";
+        $response_stripe_enabled["value"] = ($settings->getStripe()) ? "TRUE" : "FALSE";
 
         $response_paypal_enabled["name"] = "APP_PAYPAL_ENABLED";
-        $response_paypal_enabled["value"] = ($settings->getPaypal())? "TRUE":"FALSE";
-
+        $response_paypal_enabled["value"] = ($settings->getPaypal()) ? "TRUE" : "FALSE";
 
 
         $response_paypal_client_id["name"] = "APP_PAYPAL_CLIENT_ID";
@@ -158,109 +168,120 @@ class VersionController extends Controller
 
 
         $response_cash_enabled["name"] = "APP_CASH_ENABLED";
-        $response_cash_enabled["value"] = ($settings->getManual())? "TRUE":"FALSE";
+        $response_cash_enabled["value"] = ($settings->getManual()) ? "TRUE" : "FALSE";
 
         $response_gplay_enabled["name"] = "APP_GPLAY_ENABLED";
-        $response_gplay_enabled["value"] = ($settings->getGpay())? "TRUE":"FALSE";
+        $response_gplay_enabled["value"] = ($settings->getGpay()) ? "TRUE" : "FALSE";
 
 
         $response_app_login_required["name"] = "APP_LOGIN_REQUIRED";
-        $response_app_login_required["value"] = ($settings->getLogin())? "TRUE":"FALSE";
+        $response_app_login_required["value"] = ($settings->getLogin()) ? "TRUE" : "FALSE";
 
         $response_ads_rewarded_type["name"] = "ADMIN_REWARDED_AD_TYPE";
         $response_ads_rewarded_type["value"] = $settings->getBannerfacebookid();
 
 
-        $errors[]=$response_ads_rewarded_type;
+        $errors[] = $response_ads_rewarded_type;
 
-        $errors[]=$response_ads_rewarded;
-        $errors[]=$response_ads_rewarded_type;
-        $errors[]=$response_ads_interstitial_admob_id;
-        $errors[]=$response_ads_interstitial_facebook_id;
-        $errors[]=$response_ads_interstitial_type;
-        $errors[]=$response_ads_interstitial_click;
-        $errors[]=$response_ads_banner_admob_id;
-        $errors[]=$response_ads_banner_facebook_id;
-        $errors[]=$response_ads_banner_type;
-        $errors[]=$response_ads_native_facebook_id;
-        $errors[]=$response_ads_native_admob_id;
-        $errors[]=$response_ads_native_item;
-        $errors[]=$response_ads_native_type;
-        $errors[]=$response_currency;
-        $errors[]=$response_cash_account;
-        $errors[]=$response_stripe_public_key;
-        $errors[]=$response_stripe_enabled;
-        $errors[]=$response_paypal_enabled;
-        $errors[]=$response_cash_enabled;
-        $errors[]=$response_gplay_enabled;
-        $errors[]=$response_app_login_required;
-        $errors[]=$response_paypal_client_id;
-        
-        $error=array(
-                "code"=>$code,
-                "message"=>$message,
-                "values"=>$errors,
-                );
-        header('Content-Type: application/json'); 
+        $errors[] = $response_ads_rewarded;
+        $errors[] = $response_ads_rewarded_type;
+        $errors[] = $response_ads_interstitial_admob_id;
+        $errors[] = $response_ads_interstitial_facebook_id;
+        $errors[] = $response_ads_interstitial_type;
+        $errors[] = $response_ads_interstitial_click;
+        $errors[] = $response_ads_banner_admob_id;
+        $errors[] = $response_ads_banner_facebook_id;
+        $errors[] = $response_ads_banner_type;
+        $errors[] = $response_ads_native_facebook_id;
+        $errors[] = $response_ads_native_admob_id;
+        $errors[] = $response_ads_native_item;
+        $errors[] = $response_ads_native_type;
+        $errors[] = $response_currency;
+        $errors[] = $response_cash_account;
+        $errors[] = $response_stripe_public_key;
+        $errors[] = $response_stripe_enabled;
+        $errors[] = $response_paypal_enabled;
+        $errors[] = $response_cash_enabled;
+        $errors[] = $response_gplay_enabled;
+        $errors[] = $response_app_login_required;
+        $errors[] = $response_paypal_client_id;
+
+        $error = array(
+            "code" => $code,
+            "message" => $message,
+            "values" => $errors,
+        );
+        header('Content-Type: application/json');
         $encoders = array(new XmlEncoder(), new JsonEncoder());
         $normalizers = array(new ObjectNormalizer());
         $serializer = new Serializer($normalizers, $encoders);
-        $jsonContent=$serializer->serialize($error, 'json');
-        return new Response($jsonContent);  
+        $jsonContent = $serializer->serialize($error, 'json');
+        return new Response($jsonContent);
     }
+
     public function indexAction()
     {
-	    $em=$this->getDoctrine()->getManager();
-        $versions=$em->getRepository('AppBundle:Version')->findBy(array(),array("code"=>"asc"));
-	    return $this->render('AppBundle:Version:index.html.twig',array("versions"=>$versions));    
-	}
-  
+        $em = $this->getDoctrine()->getManager();
+        $versions = $em->getRepository('AppBundle:Version')->findBy(array(), array("code" => "asc"));
+        return $this->render('AppBundle:Version:index.html.twig', array("versions" => $versions));
+    }
 
-    public function deleteAction($id,Request $request){
-        $em=$this->getDoctrine()->getManager();
+    /**
+     * @param $id
+     * @param Request $request
+     * @return mixed
+     */
+    public function deleteAction($id, Request $request)
+    {
+        $em = $this->getDoctrine()->getManager();
 
         $version = $em->getRepository("AppBundle:Version")->find($id);
-        if($version==null){
+        if ($version == null) {
             throw new NotFoundHttpException("Page not found");
         }
 
-        $form=$this->createFormBuilder(array('id' => $id))
+        $form = $this->createFormBuilder(array('id' => $id))
             ->add('id', HiddenType::class)
             ->add('Yes', SubmitType::class)
             ->getForm();
         $form->handleRequest($request);
-        if($form->isSubmitted() && $form->isValid()) {
-            
+        if ($form->isSubmitted() && $form->isValid()) {
+
             //if (sizeof($version->getAlbums())==0) {
-                $em->remove($version);
-                $em->flush();
+            $em->remove($version);
+            $em->flush();
 
 
-                $this->addFlash('success', 'Operation has been done successfully');
+            $this->addFlash('success', 'Operation has been done successfully');
             //}else{
-             //   $this->addFlash('danger', 'Operation has been cancelled ,Your album not empty');   
+            //   $this->addFlash('danger', 'Operation has been cancelled ,Your album not empty');
             //}
             return $this->redirect($this->generateUrl('app_version_index'));
         }
-        return $this->render('AppBundle:Version:delete.html.twig',array("form"=>$form->createView()));
+        return $this->render('AppBundle:Version:delete.html.twig', array("form" => $form->createView()));
     }
-    public function editAction(Request $request,$id)
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function editAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $version=$em->getRepository("AppBundle:Version")->find($id);
-        if ($version==null) {
+        $em = $this->getDoctrine()->getManager();
+        $version = $em->getRepository("AppBundle:Version")->find($id);
+        if ($version == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        $form = $this->createForm(VersionType::class,$version);
+        $form = $this->createForm(VersionType::class, $version);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $em->persist($version);
             $em->flush();
             $this->addFlash('success', 'Operation has been done successfully');
             return $this->redirect($this->generateUrl('app_version_index'));
- 
+
         }
-        return $this->render("AppBundle:Version:edit.html.twig",array("form"=>$form->createView()));
+        return $this->render("AppBundle:Version:edit.html.twig", array("form" => $form->createView()));
     }
 }
-?>

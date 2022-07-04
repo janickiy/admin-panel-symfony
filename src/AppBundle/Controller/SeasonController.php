@@ -1,5 +1,7 @@
-<?php 
+<?php
+
 namespace AppBundle\Controller;
+
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use AppBundle\Entity\Season;
 use MediaBundle\Entity\Media;
@@ -19,118 +21,146 @@ use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 
 class SeasonController extends Controller
 {
-     public function api_by_serieAction(Request $request,$id,$token)
+    /**
+     * @param Request $request
+     * @param $id
+     * @param $token
+     * @return mixed
+     */
+    public function api_by_serieAction(Request $request, $id, $token)
     {
-        if ($token!=$this->container->getParameter('token_app')) {
-            throw new NotFoundHttpException("Page not found");  
-        }
-        $em=$this->getDoctrine()->getManager();
-        $serie=$em->getRepository("AppBundle:Poster")->findOneBy(array("type"=>"serie","id"=>$id));
-        if ($serie==null) {
+        if ($token != $this->container->getParameter('token_app')) {
             throw new NotFoundHttpException("Page not found");
         }
-        $seasons =   $em->getRepository("AppBundle:Season")->findBy(array("poster"=>$serie),array("position"=>"asc"));
+        $em = $this->getDoctrine()->getManager();
+        $serie = $em->getRepository("AppBundle:Poster")->findOneBy(array("type" => "serie", "id" => $id));
+        if ($serie == null) {
+            throw new NotFoundHttpException("Page not found");
+        }
+        $seasons = $em->getRepository("AppBundle:Season")->findBy(array("poster" => $serie), array("position" => "asc"));
         return $this->render('AppBundle:Season:api_all.html.php', array("seasons" => $seasons));
     }
 
-    public function editAction(Request $request,$id)
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function editAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $season=$em->getRepository("AppBundle:Season")->findOneBy(array("id"=>$id));
-        if ($season==null) {
+        $em = $this->getDoctrine()->getManager();
+        $season = $em->getRepository("AppBundle:Season")->findOneBy(array("id" => $id));
+        if ($season == null) {
             throw new NotFoundHttpException("Page not found");
         }
 
-        $form = $this->createForm(SeasonType::class,$season);
+        $form = $this->createForm(SeasonType::class, $season);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-                $em->flush();  
-                $this->addFlash('success', 'Operation has been done successfully');
-                return $this->redirect($this->generateUrl('app_serie_seasons',array("id"=>$season->getPoster()->getId())));
+            $em->flush();
+            $this->addFlash('success', 'Operation has been done successfully');
+            return $this->redirect($this->generateUrl('app_serie_seasons', array("id" => $season->getPoster()->getId())));
         }
-        return $this->render("AppBundle:Season:edit.html.twig",array("season"=>$season,"form"=>$form->createView()));
+        return $this->render("AppBundle:Season:edit.html.twig", array("season" => $season, "form" => $form->createView()));
     }
-    
 
-    public function upAction(Request $request,$id)
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function upAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $season=$em->getRepository("AppBundle:Season")->find($id);
-        if ($season==null) {
+        $em = $this->getDoctrine()->getManager();
+        $season = $em->getRepository("AppBundle:Season")->find($id);
+        if ($season == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        $poster=$season->getPoster();
+        $poster = $season->getPoster();
 
-        $rout =  'app_serie_seasons';
-        if ($season->getPosition()>1) {
-                $p=$season->getPosition();
-                $seasons=$em->getRepository('AppBundle:Season')->findBy(array("poster"=>$poster),array("position"=>"asc"));
-                foreach ($seasons as $key => $value) {
-                    if ($value->getPosition()==$p-1) {
-                        $value->setPosition($p);  
-                    }
-                }
-                $season->setPosition($season->getPosition()-1);
-                $em->flush(); 
-        }
-        return $this->redirect($this->generateUrl($rout,array("id"=>$poster->getId())));
-
-    }
-    public function downAction(Request $request,$id)
-    {
-        $em=$this->getDoctrine()->getManager();
-        $season=$em->getRepository("AppBundle:Season")->find($id);
-        if ($season==null) {
-            throw new NotFoundHttpException("Page not found");
-        }
-        $poster=$season->getPoster();
-
-        $rout =  'app_serie_seasons';
-
-        $max=0;
-        $seasons=$em->getRepository('AppBundle:Season')->findBy(array("poster"=>$poster),array("position"=>"asc"));
-        foreach ($seasons  as $key => $value) {
-            $max=$value->getPosition();  
-        }
-        if ($season->getPosition()<$max) {
-            $p=$season->getPosition();
+        $rout = 'app_serie_seasons';
+        if ($season->getPosition() > 1) {
+            $p = $season->getPosition();
+            $seasons = $em->getRepository('AppBundle:Season')->findBy(array("poster" => $poster), array("position" => "asc"));
             foreach ($seasons as $key => $value) {
-                if ($value->getPosition()==$p+1) {
-                    $value->setPosition($p);  
+                if ($value->getPosition() == $p - 1) {
+                    $value->setPosition($p);
                 }
             }
-            $season->setPosition($season->getPosition()+1);
-            $em->flush();  
+            $season->setPosition($season->getPosition() - 1);
+            $em->flush();
         }
-        return $this->redirect($this->generateUrl($rout,array("id"=>$poster->getId())));    
+        return $this->redirect($this->generateUrl($rout, array("id" => $poster->getId())));
 
     }
-    public function deleteAction($id,Request $request){
-        $em=$this->getDoctrine()->getManager();
 
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function downAction(Request $request, $id)
+    {
+        $em = $this->getDoctrine()->getManager();
         $season = $em->getRepository("AppBundle:Season")->find($id);
-        if($season==null){
+        if ($season == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        
-        $serie=$season->getPoster();
+        $poster = $season->getPoster();
 
-        $form=$this->createFormBuilder(array('id' => $id))
+        $rout = 'app_serie_seasons';
+
+        $max = 0;
+        $seasons = $em->getRepository('AppBundle:Season')->findBy(array("poster" => $poster), array("position" => "asc"));
+        foreach ($seasons as $key => $value) {
+            $max = $value->getPosition();
+        }
+        if ($season->getPosition() < $max) {
+            $p = $season->getPosition();
+            foreach ($seasons as $key => $value) {
+                if ($value->getPosition() == $p + 1) {
+                    $value->setPosition($p);
+                }
+            }
+            $season->setPosition($season->getPosition() + 1);
+            $em->flush();
+        }
+        return $this->redirect($this->generateUrl($rout, array("id" => $poster->getId())));
+
+    }
+
+    /**
+     * @param $id
+     * @param Request $request
+     * @return mixed
+     */
+    public function deleteAction($id, Request $request)
+    {
+        $em = $this->getDoctrine()->getManager();
+
+        $season = $em->getRepository("AppBundle:Season")->find($id);
+        if ($season == null) {
+            throw new NotFoundHttpException("Page not found");
+        }
+
+        $serie = $season->getPoster();
+
+        $form = $this->createFormBuilder(array('id' => $id))
             ->add('id', HiddenType::class)
             ->add('Yes', SubmitType::class)
             ->getForm();
 
         $form->handleRequest($request);
-        if($form->isSubmitted() && $form->isValid()) {
+        if ($form->isSubmitted() && $form->isValid()) {
 
             foreach ($season->getEpisodes() as $key => $episode) {
-            
+
                 foreach ($episode->getSources() as $key => $source) {
                     $media_source = $source->getMedia();
                     $em->remove($source);
                     $em->flush();
 
-                    if ($media_source!=null) {
+                    if ($media_source != null) {
                         $media_source->delete($this->container->getParameter('files_directory'));
                         $em->remove($media_source);
                         $em->flush();
@@ -138,11 +168,11 @@ class SeasonController extends Controller
                 }
                 foreach ($episode->getSubtitles() as $key => $subtitle) {
                     $media_subtitle = $subtitle->getMedia();
-                    
+
                     $em->remove($subtitle);
                     $em->flush();
 
-                    if ($media_subtitle!=null) {
+                    if ($media_subtitle != null) {
                         $media_subtitle->delete($this->container->getParameter('files_directory'));
                         $em->remove($media_subtitle);
                         $em->flush();
@@ -153,7 +183,7 @@ class SeasonController extends Controller
                 $em->remove($episode);
                 $em->flush();
 
-                if ($media_episode!=null) {
+                if ($media_episode != null) {
                     $media_episode->delete($this->container->getParameter('files_directory'));
                     $em->remove($media_episode);
                     $em->flush();
@@ -163,10 +193,10 @@ class SeasonController extends Controller
             $em->flush();
 
 
-            $seasons =  $em->getRepository("AppBundle:Season")->findBy(array("poster"=>$serie),array("position"=>"asc"));
+            $seasons = $em->getRepository("AppBundle:Season")->findBy(array("poster" => $serie), array("position" => "asc"));
             $position = 0;
             foreach ($seasons as $key => $sea) {
-                $position ++;
+                $position++;
                 $sea->setPosition($position);
                 $em->flush();
             }
@@ -182,10 +212,9 @@ class SeasonController extends Controller
             $em->flush();
 
             $this->addFlash('success', 'Operation has been done successfully');
-            return $this->redirect($this->generateUrl('app_serie_seasons',array("id"=>$serie->getId())));
+            return $this->redirect($this->generateUrl('app_serie_seasons', array("id" => $serie->getId())));
         }
-        return $this->render('AppBundle:Season:delete.html.twig',array("serie"=>$serie,"form"=>$form->createView()));
+        return $this->render('AppBundle:Season:delete.html.twig', array("serie" => $serie, "form" => $form->createView()));
     }
 
 }
-?>

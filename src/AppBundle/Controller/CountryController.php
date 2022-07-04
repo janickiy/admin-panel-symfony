@@ -1,5 +1,7 @@
-<?php 
+<?php
+
 namespace AppBundle\Controller;
+
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use AppBundle\Entity\Country;
 use MediaBundle\Entity\Media;
@@ -21,102 +23,125 @@ class CountryController extends Controller
     public function indexAction()
     {
         $em = $this->getDoctrine()->getManager();
-        $countries =   $em->getRepository("AppBundle:Country")->findBy(array(),array());
-        return $this->render("AppBundle:Country:index.html.twig",array("countries"=>$countries));
+        $countries = $em->getRepository("AppBundle:Country")->findBy(array(), array());
+        return $this->render("AppBundle:Country:index.html.twig", array("countries" => $countries));
     }
-    public function api_allAction(Request $request,$token)
+
+    /**
+     * @param Request $request
+     * @param $token
+     * @return Response
+     */
+    public function api_allAction(Request $request, $token)
     {
-        if ($token!=$this->container->getParameter('token_app')) {
-            throw new NotFoundHttpException("Page not found");  
+        if ($token != $this->container->getParameter('token_app')) {
+            throw new NotFoundHttpException("Page not found");
         }
-        $em=$this->getDoctrine()->getManager();
+        $em = $this->getDoctrine()->getManager();
 
         $imagineCacheManager = $this->get('liip_imagine.cache.manager');
-        $list=array();
-        $countries =   $em->getRepository("AppBundle:Country")->findBy(array(),array());
+        $list = array();
+        $countries = $em->getRepository("AppBundle:Country")->findBy(array(), array());
         foreach ($countries as $key => $country) {
-            $s["id"]=$country->getId();
-            $s["title"]=$country->getTitle();
-            $s["image"]=$imagineCacheManager->getBrowserPath( $country->getMedia()->getLink(), 'country_thumb');
-            $list[]=$s;
+            $s["id"] = $country->getId();
+            $s["title"] = $country->getTitle();
+            $s["image"] = $imagineCacheManager->getBrowserPath($country->getMedia()->getLink(), 'country_thumb');
+            $list[] = $s;
         }
-        header('Content-Type: application/json'); 
+        header('Content-Type: application/json');
         $encoders = array(new XmlEncoder(), new JsonEncoder());
         $normalizers = array(new ObjectNormalizer());
         $serializer = new Serializer($normalizers, $encoders);
-        $jsonContent=$serializer->serialize($list, 'json');
+        $jsonContent = $serializer->serialize($list, 'json');
         return new Response($jsonContent);
     }
-    public function api_by_sectionAction(Request $request,$id,$token)
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @param $token
+     * @return Response
+     */
+    public function api_by_sectionAction(Request $request, $id, $token)
     {
-        if ($token!=$this->container->getParameter('token_app')) {
-            throw new NotFoundHttpException("Page not found");  
+        if ($token != $this->container->getParameter('token_app')) {
+            throw new NotFoundHttpException("Page not found");
         }
-        $em=$this->getDoctrine()->getManager();
-        $section=$em->getRepository("AppBundle:Section")->find($id);
+        $em = $this->getDoctrine()->getManager();
+        $section = $em->getRepository("AppBundle:Section")->find($id);
 
         $imagineCacheManager = $this->get('liip_imagine.cache.manager');
-        $list=array();
-        $countries =   $em->getRepository("AppBundle:Country")->findBy(array("section"=>$section),array("position"=>"asc"));
+        $list = array();
+        $countries = $em->getRepository("AppBundle:Country")->findBy(array("section" => $section), array("position" => "asc"));
         foreach ($countries as $key => $country) {
-            $s["id"]=$country->getId();
-            $s["title"]=$country->getTitle();
-            $s["image"]=$imagineCacheManager->getBrowserPath( $country->getMedia()->getLink(), 'section_thumb_api');
-            $list[]=$s;
+            $s["id"] = $country->getId();
+            $s["title"] = $country->getTitle();
+            $s["image"] = $imagineCacheManager->getBrowserPath($country->getMedia()->getLink(), 'section_thumb_api');
+            $list[] = $s;
         }
-        header('Content-Type: application/json'); 
+        header('Content-Type: application/json');
         $encoders = array(new XmlEncoder(), new JsonEncoder());
         $normalizers = array(new ObjectNormalizer());
         $serializer = new Serializer($normalizers, $encoders);
-        $jsonContent=$serializer->serialize($list, 'json');
+        $jsonContent = $serializer->serialize($list, 'json');
         return new Response($jsonContent);
     }
-    
+
+    /**
+     * @param Request $request
+     * @return mixed
+     */
     public function addAction(Request $request)
     {
-        $country= new Country();
-        $form = $this->createForm(CountryType::class,$country);
-        $em=$this->getDoctrine()->getManager();
+        $country = new Country();
+        $form = $this->createForm(CountryType::class, $country);
+        $em = $this->getDoctrine()->getManager();
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-                if( $country->getFile()!=null ){
-                    $media= new Media();
-                    $media->setFile($country->getFile());
-                    $media->upload($this->container->getParameter('files_directory'));
-                    $em->persist($media);
-                    $em->flush();
-                    $country->setMedia($media);
+            if ($country->getFile() != null) {
+                $media = new Media();
+                $media->setFile($country->getFile());
+                $media->upload($this->container->getParameter('files_directory'));
+                $em->persist($media);
+                $em->flush();
+                $country->setMedia($media);
 
-                    $em->persist($country);
-                    $em->flush();
-                    $this->addFlash('success', 'Operation has been done successfully');
-                    return $this->redirect($this->generateUrl('app_country_index'));
-                }else{
-                    $error = new FormError("Required image file");
-                    $form->get('file')->addError($error);
-                }
-       }
-        return $this->render("AppBundle:Country:add.html.twig",array("form"=>$form->createView()));
+                $em->persist($country);
+                $em->flush();
+                $this->addFlash('success', 'Operation has been done successfully');
+                return $this->redirect($this->generateUrl('app_country_index'));
+            } else {
+                $error = new FormError("Required image file");
+                $form->get('file')->addError($error);
+            }
+        }
+        return $this->render("AppBundle:Country:add.html.twig", array("form" => $form->createView()));
     }
 
-    public function deleteAction($id,Request $request){
-        $em=$this->getDoctrine()->getManager();
+    /**
+     * @param $id
+     * @param Request $request
+     * @return mixed
+     */
+    public function deleteAction($id, Request $request)
+    {
+        $em = $this->getDoctrine()->getManager();
 
         $country = $em->getRepository("AppBundle:Country")->find($id);
-        if($country==null){
+        if ($country == null) {
             throw new NotFoundHttpException("Page not found");
         }
 
-        $form=$this->createFormBuilder(array('id' => $id))
+        $form = $this->createFormBuilder(array('id' => $id))
             ->add('id', HiddenType::class)
             ->add('Yes', SubmitType::class)
             ->getForm();
         $form->handleRequest($request);
-        if($form->isSubmitted() && $form->isValid()) {
+        if ($form->isSubmitted() && $form->isValid()) {
             $media_old = $country->getMedia();
             $em->remove($country);
             $em->flush();
-            if( $media_old!=null ){
+            if ($media_old != null) {
                 $media_old->delete($this->container->getParameter('files_directory'));
                 $em->remove($media_old);
                 $em->flush();
@@ -124,21 +149,27 @@ class CountryController extends Controller
             $this->addFlash('success', 'Operation has been done successfully');
             return $this->redirect($this->generateUrl('app_country_index'));
         }
-        return $this->render('AppBundle:Country:delete.html.twig',array("form"=>$form->createView()));
+        return $this->render('AppBundle:Country:delete.html.twig', array("form" => $form->createView()));
     }
-    public function editAction(Request $request,$id)
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function editAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $country=$em->getRepository("AppBundle:Country")->find($id);
-        if ($country==null) {
+        $em = $this->getDoctrine()->getManager();
+        $country = $em->getRepository("AppBundle:Country")->find($id);
+        if ($country == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        $form = $this->createForm(CountryType::class,$country);
+        $form = $this->createForm(CountryType::class, $country);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            if( $country->getFile()!=null ){
-                $media= new Media();
-                $media_old=$country->getMedia();
+            if ($country->getFile() != null) {
+                $media = new Media();
+                $media_old = $country->getMedia();
                 $media->setFile($country->getFile());
                 $media->upload($this->container->getParameter('files_directory'));
                 $em->persist($media);
@@ -153,9 +184,8 @@ class CountryController extends Controller
             $em->flush();
             $this->addFlash('success', 'Operation has been done successfully');
             return $this->redirect($this->generateUrl('app_country_index'));
- 
+
         }
-        return $this->render("AppBundle:Country:edit.html.twig",array("country"=>$country,"form"=>$form->createView()));
+        return $this->render("AppBundle:Country:edit.html.twig", array("country" => $country, "form" => $form->createView()));
     }
 }
-?>

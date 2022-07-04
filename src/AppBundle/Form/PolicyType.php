@@ -1,4 +1,5 @@
 <?php
+
 namespace AppBundle\Form;
 
 use Symfony\Component\Form\AbstractType;
@@ -11,18 +12,22 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 
 class PolicyType extends AbstractType
 {
+    /**
+     * @param FormBuilderInterface $builder
+     * @param array $options
+     */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-       $builder->add('privacypolicy', CKEditorType::class, 
-                    array(
-                        'config_name' => 'user_config'
-                    )
-                );
-        $builder->add('save', SubmitType::class,array("label"=>"SAVE"));
+        $builder->add('privacypolicy', CKEditorType::class,
+            array(
+                'config_name' => 'user_config'
+            )
+        );
+        $builder->add('save', SubmitType::class, array("label" => "SAVE"));
     }
+
     public function getName()
     {
         return 'Policy';
     }
 }
-?>

@@ -1,5 +1,7 @@
-<?php 
+<?php
+
 namespace AppBundle\Controller;
+
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use AppBundle\Entity\Genre;
 use MediaBundle\Entity\Media;
@@ -21,172 +23,210 @@ class GenreController extends Controller
     public function indexAction()
     {
         $em = $this->getDoctrine()->getManager();
-        $genres =   $em->getRepository("AppBundle:Genre")->findBy(array(),array("position"=>"asc"));
-        return $this->render("AppBundle:Genre:index.html.twig",array("genres"=>$genres));
+        $genres = $em->getRepository("AppBundle:Genre")->findBy(array(), array("position" => "asc"));
+        return $this->render("AppBundle:Genre:index.html.twig", array("genres" => $genres));
     }
 
-
-    public function api_allAction(Request $request,$token)
+    /**
+     * @param Request $request
+     * @param $token
+     * @return Response
+     */
+    public function api_allAction(Request $request, $token)
     {
-        if ($token!=$this->container->getParameter('token_app')) {
-            throw new NotFoundHttpException("Page not found");  
+        if ($token != $this->container->getParameter('token_app')) {
+            throw new NotFoundHttpException("Page not found");
         }
-        $em=$this->getDoctrine()->getManager();
+        $em = $this->getDoctrine()->getManager();
 
         $imagineCacheManager = $this->get('liip_imagine.cache.manager');
-        $list=array();
-        $genres =   $em->getRepository("AppBundle:Genre")->findBy(array(),array("position"=>"asc"));
+        $list = array();
+        $genres = $em->getRepository("AppBundle:Genre")->findBy(array(), array("position" => "asc"));
         foreach ($genres as $key => $genre) {
-            $s["id"]=$genre->getId();
-            $s["title"]=$genre->getTitle();
-            $list[]=$s;
+            $s["id"] = $genre->getId();
+            $s["title"] = $genre->getTitle();
+            $list[] = $s;
         }
-        header('Content-Type: application/json'); 
+        header('Content-Type: application/json');
         $encoders = array(new XmlEncoder(), new JsonEncoder());
         $normalizers = array(new ObjectNormalizer());
         $serializer = new Serializer($normalizers, $encoders);
-        $jsonContent=$serializer->serialize($list, 'json');
+        $jsonContent = $serializer->serialize($list, 'json');
         return new Response($jsonContent);
     }
-    public function api_by_sectionAction(Request $request,$id,$token)
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @param $token
+     * @return Response
+     */
+    public function api_by_sectionAction(Request $request, $id, $token)
     {
-        if ($token!=$this->container->getParameter('token_app')) {
-            throw new NotFoundHttpException("Page not found");  
+        if ($token != $this->container->getParameter('token_app')) {
+            throw new NotFoundHttpException("Page not found");
         }
-        $em=$this->getDoctrine()->getManager();
-        $section=$em->getRepository("AppBundle:Section")->find($id);
+        $em = $this->getDoctrine()->getManager();
+        $section = $em->getRepository("AppBundle:Section")->find($id);
 
         $imagineCacheManager = $this->get('liip_imagine.cache.manager');
-        $list=array();
-        $genres =   $em->getRepository("AppBundle:Genre")->findBy(array("section"=>$section),array("position"=>"asc"));
+        $list = array();
+        $genres = $em->getRepository("AppBundle:Genre")->findBy(array("section" => $section), array("position" => "asc"));
         foreach ($genres as $key => $genre) {
-            $s["id"]=$genre->getId();
-            $s["title"]=$genre->getTitle();
-            $s["image"]=$imagineCacheManager->getBrowserPath( $genre->getMedia()->getLink(), 'section_thumb_api');
-            $list[]=$s;
+            $s["id"] = $genre->getId();
+            $s["title"] = $genre->getTitle();
+            $s["image"] = $imagineCacheManager->getBrowserPath($genre->getMedia()->getLink(), 'section_thumb_api');
+            $list[] = $s;
         }
-        header('Content-Type: application/json'); 
+        header('Content-Type: application/json');
         $encoders = array(new XmlEncoder(), new JsonEncoder());
         $normalizers = array(new ObjectNormalizer());
         $serializer = new Serializer($normalizers, $encoders);
-        $jsonContent=$serializer->serialize($list, 'json');
+        $jsonContent = $serializer->serialize($list, 'json');
         return new Response($jsonContent);
     }
-    
+
+    /**
+     * @param Request $request
+     * @return mixed
+     */
     public function addAction(Request $request)
     {
-        $genre= new Genre();
-        $form = $this->createForm(GenreType::class,$genre);
-        $em=$this->getDoctrine()->getManager();
+        $genre = new Genre();
+        $form = $this->createForm(GenreType::class, $genre);
+        $em = $this->getDoctrine()->getManager();
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-                    $max=0;
-                    $genres=$em->getRepository('AppBundle:Genre')->findAll();
-                    foreach ($genres as $key => $value) {
-                        if ($value->getPosition()>$max) {
-                            $max=$value->getPosition();
-                        }
-                    }
-                    $genre->setPosition($max+1);
-                    $em->persist($genre);
-                    $em->flush();
-                    $this->addFlash('success', 'Operation has been done successfully');
-                    return $this->redirect($this->generateUrl('app_genre_index'));
-
-       }
-        return $this->render("AppBundle:Genre:add.html.twig",array("form"=>$form->createView()));
-    }
-
-    public function upAction(Request $request,$id)
-    {
-        $em=$this->getDoctrine()->getManager();
-        $genre=$em->getRepository("AppBundle:Genre")->find($id);
-        if ($genre==null) {
-            throw new NotFoundHttpException("Page not found");
-        }
-        if ($genre->getPosition()>1) {
-            $p=$genre->getPosition();
-            $genres=$em->getRepository('AppBundle:Genre')->findAll();
+            $max = 0;
+            $genres = $em->getRepository('AppBundle:Genre')->findAll();
             foreach ($genres as $key => $value) {
-                if ($value->getPosition()==$p-1) {
-                    $value->setPosition($p);  
+                if ($value->getPosition() > $max) {
+                    $max = $value->getPosition();
                 }
             }
-            $genre->setPosition($genre->getPosition()-1);
-            $em->flush(); 
+            $genre->setPosition($max + 1);
+            $em->persist($genre);
+            $em->flush();
+            $this->addFlash('success', 'Operation has been done successfully');
+            return $this->redirect($this->generateUrl('app_genre_index'));
+
+        }
+        return $this->render("AppBundle:Genre:add.html.twig", array("form" => $form->createView()));
+    }
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function upAction(Request $request, $id)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $genre = $em->getRepository("AppBundle:Genre")->find($id);
+        if ($genre == null) {
+            throw new NotFoundHttpException("Page not found");
+        }
+        if ($genre->getPosition() > 1) {
+            $p = $genre->getPosition();
+            $genres = $em->getRepository('AppBundle:Genre')->findAll();
+            foreach ($genres as $key => $value) {
+                if ($value->getPosition() == $p - 1) {
+                    $value->setPosition($p);
+                }
+            }
+            $genre->setPosition($genre->getPosition() - 1);
+            $em->flush();
         }
         return $this->redirect($this->generateUrl('app_genre_index'));
     }
-    public function downAction(Request $request,$id)
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function downAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $genre=$em->getRepository("AppBundle:Genre")->find($id);
-        if ($genre==null) {
+        $em = $this->getDoctrine()->getManager();
+        $genre = $em->getRepository("AppBundle:Genre")->find($id);
+        if ($genre == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        $max=0;
-        $genres=$em->getRepository('AppBundle:Genre')->findBy(array(),array("position"=>"asc"));
-        foreach ($genres  as $key => $value) {
-            $max=$value->getPosition();  
+        $max = 0;
+        $genres = $em->getRepository('AppBundle:Genre')->findBy(array(), array("position" => "asc"));
+        foreach ($genres as $key => $value) {
+            $max = $value->getPosition();
         }
-        if ($genre->getPosition()<$max) {
-            $p=$genre->getPosition();
+        if ($genre->getPosition() < $max) {
+            $p = $genre->getPosition();
             foreach ($genres as $key => $value) {
-                if ($value->getPosition()==$p+1) {
-                    $value->setPosition($p);  
+                if ($value->getPosition() == $p + 1) {
+                    $value->setPosition($p);
                 }
             }
-            $genre->setPosition($genre->getPosition()+1);
-            $em->flush();  
+            $genre->setPosition($genre->getPosition() + 1);
+            $em->flush();
         }
         return $this->redirect($this->generateUrl('app_genre_index'));
     }
-    public function deleteAction($id,Request $request){
-        $em=$this->getDoctrine()->getManager();
+
+    /**
+     * @param $id
+     * @param Request $request
+     * @return mixed
+     */
+    public function deleteAction($id, Request $request)
+    {
+        $em = $this->getDoctrine()->getManager();
 
         $genre = $em->getRepository("AppBundle:Genre")->find($id);
-        if($genre==null){
+        if ($genre == null) {
             throw new NotFoundHttpException("Page not found");
         }
 
-        $form=$this->createFormBuilder(array('id' => $id))
+        $form = $this->createFormBuilder(array('id' => $id))
             ->add('id', HiddenType::class)
             ->add('Yes', SubmitType::class)
             ->getForm();
         $form->handleRequest($request);
-        if($form->isSubmitted() && $form->isValid()) {
-            $genres=$em->getRepository('AppBundle:Genre')->findBy(array(),array("position"=>"asc"));
+        if ($form->isSubmitted() && $form->isValid()) {
+            $genres = $em->getRepository('AppBundle:Genre')->findBy(array(), array("position" => "asc"));
             $em->remove($genre);
             $em->flush();
 
-            $p=1;
+            $p = 1;
             foreach ($genres as $key => $value) {
-                $value->setPosition($p); 
-                $p++; 
+                $value->setPosition($p);
+                $p++;
             }
             $em->flush();
             $this->addFlash('success', 'Operation has been done successfully');
             return $this->redirect($this->generateUrl('app_genre_index'));
         }
-        return $this->render('AppBundle:Genre:delete.html.twig',array("form"=>$form->createView()));
+        return $this->render('AppBundle:Genre:delete.html.twig', array("form" => $form->createView()));
     }
-    public function editAction(Request $request,$id)
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function editAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $genre=$em->getRepository("AppBundle:Genre")->find($id);
-        if ($genre==null) {
+        $em = $this->getDoctrine()->getManager();
+        $genre = $em->getRepository("AppBundle:Genre")->find($id);
+        if ($genre == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        $form = $this->createForm(GenreType::class,$genre);
+        $form = $this->createForm(GenreType::class, $genre);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $em->persist($genre);
             $em->flush();
             $this->addFlash('success', 'Operation has been done successfully');
             return $this->redirect($this->generateUrl('app_genre_index'));
- 
+
         }
-        return $this->render("AppBundle:Genre:edit.html.twig",array("genre"=>$genre,"form"=>$form->createView()));
+        return $this->render("AppBundle:Genre:edit.html.twig", array("genre" => $genre, "form" => $form->createView()));
     }
 }
-?>

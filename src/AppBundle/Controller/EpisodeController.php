@@ -1,5 +1,7 @@
-<?php 
+<?php
+
 namespace AppBundle\Controller;
+
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use AppBundle\Entity\Source;
 use AppBundle\Entity\Episode;
@@ -20,68 +22,88 @@ use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 
 class EpisodeController extends Controller
 {
- 
-
-    public function editAction(Request $request,$id)
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function editAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $episode=$em->getRepository("AppBundle:Episode")->findOneBy(array("id"=>$id));
-        if ($episode==null) {
+        $em = $this->getDoctrine()->getManager();
+        $episode = $em->getRepository("AppBundle:Episode")->findOneBy(array("id" => $id));
+        if ($episode == null) {
             throw new NotFoundHttpException("Page not found");
         }
 
-        $form = $this->createForm(EditEpisodeType::class,$episode);
+        $form = $this->createForm(EditEpisodeType::class, $episode);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-                if ($episode->getFile()!=null ){
+            if ($episode->getFile() != null) {
 
-                    $media_cover_old = $episode->getMedia();
+                $media_cover_old = $episode->getMedia();
 
 
-                    $episodemedia= new Media();
-                    $episodemedia->setFile($episode->getFile());
-                    $episodemedia->upload($this->container->getParameter('files_directory'));
-                    $em->persist($episodemedia);
+                $episodemedia = new Media();
+                $episodemedia->setFile($episode->getFile());
+                $episodemedia->upload($this->container->getParameter('files_directory'));
+                $em->persist($episodemedia);
+                $em->flush();
+                $episode->setMedia($episodemedia);
+
+                if ($media_cover_old != null) {
+                    $media_cover_old->delete($this->container->getParameter('files_directory'));
+                    $em->remove($media_cover_old);
                     $em->flush();
-                    $episode->setMedia($episodemedia);
-
-                    if ($media_cover_old!=null) {
-                        $media_cover_old->delete($this->container->getParameter('files_directory'));
-                        $em->remove($media_cover_old);
-                        $em->flush();
-                    }
-                    
                 }
-                $em->flush();  
-                $this->addFlash('success', 'Operation has been done successfully');
-                return $this->redirect($this->generateUrl('app_serie_seasons',array("id"=>$episode->getSeason()->getPoster()->getId())));
-           
+
+            }
+            $em->flush();
+            $this->addFlash('success', 'Operation has been done successfully');
+            return $this->redirect($this->generateUrl('app_serie_seasons', array("id" => $episode->getSeason()->getPoster()->getId())));
+
         }
 
-        return $this->render("AppBundle:Episode:edit.html.twig",array("season"=>$episode->getSeason(),"form"=>$form->createView()));
+        return $this->render("AppBundle:Episode:edit.html.twig", array("season" => $episode->getSeason(), "form" => $form->createView()));
     }
-    public function subtitlesAction(Request $request,$id)
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function subtitlesAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $episode=$em->getRepository("AppBundle:Episode")->find($id);
-        if ($episode==null) {
+        $em = $this->getDoctrine()->getManager();
+        $episode = $em->getRepository("AppBundle:Episode")->find($id);
+        if ($episode == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        return $this->render("AppBundle:Episode:subtitles.html.twig",array("episode"=>$episode));
+        return $this->render("AppBundle:Episode:subtitles.html.twig", array("episode" => $episode));
     }
-    public function sourcesAction(Request $request,$id)
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function sourcesAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $episode=$em->getRepository("AppBundle:Episode")->find($id);
-        if ($episode==null) {
+        $em = $this->getDoctrine()->getManager();
+        $episode = $em->getRepository("AppBundle:Episode")->find($id);
+        if ($episode == null) {
             throw new NotFoundHttpException("Page not found");
         }
 
-        return $this->render("AppBundle:Episode:sources.html.twig",array("episode"=>$episode));
+        return $this->render("AppBundle:Episode:sources.html.twig", array("episode" => $episode));
     }
-    function get_image_mime_type($image_path)
+
+    /**
+     * @param $image_path
+     * @return false|string
+     */
+    public function get_image_mime_type($image_path)
     {
-        $mimes  = array(
+        $mimes = array(
             IMAGETYPE_GIF => "image/gif",
             IMAGETYPE_JPEG => "image/jpg",
             IMAGETYPE_PNG => "image/png",
@@ -101,18 +123,20 @@ class EpisodeController extends Controller
             IMAGETYPE_ICO => "image/ico");
 
         if (($image_type = exif_imagetype($image_path))
-            && (array_key_exists($image_type ,$mimes)))
-        {
+            && (array_key_exists($image_type, $mimes))) {
             return $mimes[$image_type];
-        }
-        else
-        {
+        } else {
             return FALSE;
         }
     }
-   function get_image_ext_type($image_path)
+
+    /**
+     * @param $image_path
+     * @return false|string
+     */
+    public function get_image_ext_type($image_path)
     {
-        $mimes  = array(
+        $mimes = array(
             IMAGETYPE_GIF => "gif",
             IMAGETYPE_JPEG => "jpg",
             IMAGETYPE_PNG => "png",
@@ -132,170 +156,191 @@ class EpisodeController extends Controller
             IMAGETYPE_ICO => "ico");
 
         if (($image_type = exif_imagetype($image_path))
-            && (array_key_exists($image_type ,$mimes)))
-        {
+            && (array_key_exists($image_type, $mimes))) {
             return $mimes[$image_type];
-        }
-        else
-        {
+        } else {
             return FALSE;
         }
     }
-    public function addAction(Request $request,$id)
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function addAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $season=$em->getRepository("AppBundle:Season")->findOneBy(array("id"=>$id));
-        if ($season==null) {
+        $em = $this->getDoctrine()->getManager();
+        $season = $em->getRepository("AppBundle:Season")->findOneBy(array("id" => $id));
+        if ($season == null) {
             throw new NotFoundHttpException("Page not found");
         }
         $episode = new Episode();
-        $form = $this->createForm(EpisodeType::class,$episode);
+        $form = $this->createForm(EpisodeType::class, $episode);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-                if ($episode->getFile()!=null ){
-                    $episodemedia= new Media();
-                    $episodemedia->setFile($episode->getFile());
-                    $episodemedia->upload($this->container->getParameter('files_directory'));
+            if ($episode->getFile() != null) {
+                $episodemedia = new Media();
+                $episodemedia->setFile($episode->getFile());
+                $episodemedia->upload($this->container->getParameter('files_directory'));
+                $em->persist($episodemedia);
+                $em->flush();
+                $episode->setMedia($episodemedia);
+            } else {
+                if (isset($_POST["image_url"]) and $_POST["image_url"] != null and $_POST["image_url"] != "" and strpos($_POST["image_url"], 'http') === 0) {
+                    $url = $_POST["image_url"];
+                    $fileName = md5(uniqid());
+                    $fileType = $this->get_image_mime_type($url);
+                    $fileExt = $this->get_image_ext_type($url);
+                    $fullName = $fileName . "." . $fileExt;
+
+                    $uploadTo = $this->container->getParameter('files_directory') . $fileExt . "/" . $fullName;
+
+                    file_put_contents($uploadTo, file_get_contents($url));
+
+                    $episodemedia = new Media();
+                    $episodemedia->setType($fileType);
+                    $episodemedia->setExtension($fileExt);
+                    $episodemedia->setUrl($fullName);
+                    $episodemedia->setTitre($episode->getTitle());
                     $em->persist($episodemedia);
                     $em->flush();
                     $episode->setMedia($episodemedia);
-                }else{
-                    if (isset($_POST["image_url"]) and $_POST["image_url"]!=null and $_POST["image_url"]!="" and strpos($_POST["image_url"], 'http') === 0) {
-                            $url =  $_POST["image_url"];
-                            $fileName = md5(uniqid());
-                            $fileType = $this->get_image_mime_type($url);
-                            $fileExt = $this->get_image_ext_type($url);
-                            $fullName = $fileName.".".$fileExt;
-
-                            $uploadTo = $this->container->getParameter('files_directory').$fileExt."/".$fullName;
-
-                            file_put_contents($uploadTo, file_get_contents($url)); 
-
-                            $episodemedia= new Media();
-                            $episodemedia->setType($fileType);
-                            $episodemedia->setExtension($fileExt);
-                            $episodemedia->setUrl($fullName);
-                            $episodemedia->setTitre($episode->getTitle());
-                            $em->persist($episodemedia);
-                            $em->flush();
-                            $episode->setMedia($episodemedia);
-                    }
-                }
-                $max=0;
-                $episodes=$em->getRepository('AppBundle:Episode')->findBy(array("season"=>$season));
-                foreach ($episodes as $key => $value) {
-                    if ($value->getPosition()>$max) {
-                        $max=$value->getPosition();
-                    }
-                }
-                $episode->setPosition($max+1);
-                $episode->setSeason($season);
-                $em->persist($episode);
-                $em->flush();  
-                    $choices = array(
-                        1 => "youtube",
-                        2 => "m3u8",
-                        3 => "mov",
-                        4 => "mp4",
-                        6 => "mkv",
-                        7 => "webm",
-                        8 => "embed",
-                        5 => "file"
-                    );
-                
-                    if ($episode->getSourcetype()==5) {
-                        if ($episode->getSourcefile()!=null ){
-                            $mediasource= new Media();
-                            $mediasource->setFile($episode->getSourcefile());
-                            $mediasource->upload($this->container->getParameter('files_directory'));
-                            $em->persist($mediasource);
-                            $em->flush();
-
-                            $source = new  Source();
-                            $source->setType($choices[$episode->getSourcetype()]);
-                            $source->setMedia($mediasource);
-                            $source->setEpisode($episode);
-                            $em->persist($source);
-                            $em->flush();  
-                        }
-                    }else{
-                        if(strlen($episode->getSourceurl())>1 ){
-                            $source = new  Source();
-                            $source->setType($choices[$episode->getSourcetype()]);
-                            $source->setUrl($episode->getSourceurl());
-                            $source->setEpisode($episode);
-                            $em->persist($source);
-                            $em->flush();
-                        }
-                    }
-
-                $this->addFlash('success', 'Operation has been done successfully');
-                return $this->redirect($this->generateUrl('app_episode_sources',array("id"=>$episode->getId())));
-           
-        }
-        return $this->render("AppBundle:Episode:add.html.twig",array("season"=>$season,"form"=>$form->createView()));
-    }
-    public function upAction(Request $request,$id)
-    {
-        $em=$this->getDoctrine()->getManager();
-        $episode=$em->getRepository("AppBundle:Episode")->find($id);
-        if ($episode==null) {
-            throw new NotFoundHttpException("Page not found");
-        }
-        $season=$episode->getSeason();
-
-        $rout =  'app_serie_seasons';
-        if ($episode->getPosition()>1) {
-                $p=$episode->getPosition();
-                $episodes=$em->getRepository('AppBundle:Episode')->findBy(array("season"=>$season),array("position"=>"asc"));
-                foreach ($episodes as $key => $value) {
-                    if ($value->getPosition()==$p-1) {
-                        $value->setPosition($p);  
-                    }
-                }
-                $episode->setPosition($episode->getPosition()-1);
-                $em->flush(); 
-        }
-        return $this->redirect($this->generateUrl($rout,array("id"=>$season->getPoster()->getId())));
-
-    }
-    public function downAction(Request $request,$id)
-    {
-        $em=$this->getDoctrine()->getManager();
-        $episode=$em->getRepository("AppBundle:Episode")->find($id);
-        if ($episode==null) {
-            throw new NotFoundHttpException("Page not found");
-        }
-        $season=$episode->getSeason();
-
-        $rout =  'app_serie_seasons';
-
-        $max=0;
-        $episodes=$em->getRepository('AppBundle:Episode')->findBy(array("season"=>$season),array("position"=>"asc"));
-        foreach ($episodes  as $key => $value) {
-            $max=$value->getPosition();  
-        }
-        if ($episode->getPosition()<$max) {
-            $p=$episode->getPosition();
-            foreach ($episodes as $key => $value) {
-                if ($value->getPosition()==$p+1) {
-                    $value->setPosition($p);  
                 }
             }
-            $episode->setPosition($episode->getPosition()+1);
-            $em->flush();  
+            $max = 0;
+            $episodes = $em->getRepository('AppBundle:Episode')->findBy(array("season" => $season));
+            foreach ($episodes as $key => $value) {
+                if ($value->getPosition() > $max) {
+                    $max = $value->getPosition();
+                }
+            }
+            $episode->setPosition($max + 1);
+            $episode->setSeason($season);
+            $em->persist($episode);
+            $em->flush();
+            $choices = array(
+                1 => "youtube",
+                2 => "m3u8",
+                3 => "mov",
+                4 => "mp4",
+                6 => "mkv",
+                7 => "webm",
+                8 => "embed",
+                5 => "file"
+            );
+
+            if ($episode->getSourcetype() == 5) {
+                if ($episode->getSourcefile() != null) {
+                    $mediasource = new Media();
+                    $mediasource->setFile($episode->getSourcefile());
+                    $mediasource->upload($this->container->getParameter('files_directory'));
+                    $em->persist($mediasource);
+                    $em->flush();
+
+                    $source = new  Source();
+                    $source->setType($choices[$episode->getSourcetype()]);
+                    $source->setMedia($mediasource);
+                    $source->setEpisode($episode);
+                    $em->persist($source);
+                    $em->flush();
+                }
+            } else {
+                if (strlen($episode->getSourceurl()) > 1) {
+                    $source = new  Source();
+                    $source->setType($choices[$episode->getSourcetype()]);
+                    $source->setUrl($episode->getSourceurl());
+                    $source->setEpisode($episode);
+                    $em->persist($source);
+                    $em->flush();
+                }
+            }
+
+            $this->addFlash('success', 'Operation has been done successfully');
+            return $this->redirect($this->generateUrl('app_episode_sources', array("id" => $episode->getId())));
+
         }
-        return $this->redirect($this->generateUrl($rout,array("id"=>$season->getPoster()->getId())));    
+        return $this->render("AppBundle:Episode:add.html.twig", array("season" => $season, "form" => $form->createView()));
+    }
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function upAction(Request $request, $id)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $episode = $em->getRepository("AppBundle:Episode")->find($id);
+        if ($episode == null) {
+            throw new NotFoundHttpException("Page not found");
+        }
+        $season = $episode->getSeason();
+
+        $rout = 'app_serie_seasons';
+        if ($episode->getPosition() > 1) {
+            $p = $episode->getPosition();
+            $episodes = $em->getRepository('AppBundle:Episode')->findBy(array("season" => $season), array("position" => "asc"));
+            foreach ($episodes as $key => $value) {
+                if ($value->getPosition() == $p - 1) {
+                    $value->setPosition($p);
+                }
+            }
+            $episode->setPosition($episode->getPosition() - 1);
+            $em->flush();
+        }
+        return $this->redirect($this->generateUrl($rout, array("id" => $season->getPoster()->getId())));
 
     }
 
-    public function api_add_shareAction(Request $request, $token) {
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function downAction(Request $request, $id)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $episode = $em->getRepository("AppBundle:Episode")->find($id);
+        if ($episode == null) {
+            throw new NotFoundHttpException("Page not found");
+        }
+        $season = $episode->getSeason();
+
+        $rout = 'app_serie_seasons';
+
+        $max = 0;
+        $episodes = $em->getRepository('AppBundle:Episode')->findBy(array("season" => $season), array("position" => "asc"));
+        foreach ($episodes as $key => $value) {
+            $max = $value->getPosition();
+        }
+        if ($episode->getPosition() < $max) {
+            $p = $episode->getPosition();
+            foreach ($episodes as $key => $value) {
+                if ($value->getPosition() == $p + 1) {
+                    $value->setPosition($p);
+                }
+            }
+            $episode->setPosition($episode->getPosition() + 1);
+            $em->flush();
+        }
+        return $this->redirect($this->generateUrl($rout, array("id" => $season->getPoster()->getId())));
+
+    }
+
+    /**
+     * @param Request $request
+     * @param $token
+     * @return Response
+     */
+    public function api_add_shareAction(Request $request, $token)
+    {
         if ($token != $this->container->getParameter('token_app')) {
             throw new NotFoundHttpException("Page not found");
         }
         $em = $this->getDoctrine()->getManager();
         $id = $request->get("id");
-        $poster = $em->getRepository("AppBundle:Channel")->findOneBy(array("id"=>$id));
+        $poster = $em->getRepository("AppBundle:Channel")->findOneBy(array("id" => $id));
         if ($poster == null) {
             throw new NotFoundHttpException("Page not found");
         }
@@ -307,13 +352,20 @@ class EpisodeController extends Controller
         $jsonContent = $serializer->serialize($poster->getShares(), 'json');
         return new Response($jsonContent);
     }
-    public function api_add_viewAction(Request $request, $token) {
+
+    /**
+     * @param Request $request
+     * @param $token
+     * @return Response
+     */
+    public function api_add_viewAction(Request $request, $token)
+    {
         if ($token != $this->container->getParameter('token_app')) {
             throw new NotFoundHttpException("Page not found");
         }
         $em = $this->getDoctrine()->getManager();
         $id = $request->get("id");
-        $episode = $em->getRepository("AppBundle:Episode")->findOneBy(array("id"=>$id));
+        $episode = $em->getRepository("AppBundle:Episode")->findOneBy(array("id" => $id));
         if ($episode == null) {
             throw new NotFoundHttpException("Page not found");
         }
@@ -335,13 +387,20 @@ class EpisodeController extends Controller
         $jsonContent = $serializer->serialize($episode->getViews(), 'json');
         return new Response($jsonContent);
     }
-    public function api_add_downloadAction(Request $request, $token) {
+
+    /**
+     * @param Request $request
+     * @param $token
+     * @return Response
+     */
+    public function api_add_downloadAction(Request $request, $token)
+    {
         if ($token != $this->container->getParameter('token_app')) {
             throw new NotFoundHttpException("Page not found");
         }
         $em = $this->getDoctrine()->getManager();
         $id = $request->get("id");
-        $episode = $em->getRepository("AppBundle:Episode")->findOneBy(array("id"=>$id));
+        $episode = $em->getRepository("AppBundle:Episode")->findOneBy(array("id" => $id));
         if ($episode == null) {
             throw new NotFoundHttpException("Page not found");
         }
@@ -353,30 +412,37 @@ class EpisodeController extends Controller
         $jsonContent = $serializer->serialize($episode->getDownloads(), 'json');
         return new Response($jsonContent);
     }
-    public function deleteAction($id,Request $request){
-        $em=$this->getDoctrine()->getManager();
+
+    /**
+     * @param $id
+     * @param Request $request
+     * @return mixed
+     */
+    public function deleteAction($id, Request $request)
+    {
+        $em = $this->getDoctrine()->getManager();
 
         $episode = $em->getRepository("AppBundle:Episode")->find($id);
-        if($episode==null){
+        if ($episode == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        
-        $season=$episode->getSeason();
-        $url = $this->generateUrl('app_serie_seasons',array("id"=>$season->getPoster()->getId()));
-        $form=$this->createFormBuilder(array('id' => $id))
+
+        $season = $episode->getSeason();
+        $url = $this->generateUrl('app_serie_seasons', array("id" => $season->getPoster()->getId()));
+        $form = $this->createFormBuilder(array('id' => $id))
             ->add('id', HiddenType::class)
             ->add('Yes', SubmitType::class)
             ->getForm();
 
         $form->handleRequest($request);
-        if($form->isSubmitted() && $form->isValid()) {
-             $season = $episode->getSeason();
+        if ($form->isSubmitted() && $form->isValid()) {
+            $season = $episode->getSeason();
             foreach ($episode->getSources() as $key => $source) {
                 $media_source = $source->getMedia();
                 $em->remove($source);
                 $em->flush();
 
-                if ($media_source!=null) {
+                if ($media_source != null) {
                     $media_source->delete($this->container->getParameter('files_directory'));
                     $em->remove($media_source);
                     $em->flush();
@@ -384,11 +450,11 @@ class EpisodeController extends Controller
             }
             foreach ($episode->getSubtitles() as $key => $subtitle) {
                 $media_subtitle = $subtitle->getMedia();
-                
+
                 $em->remove($subtitle);
                 $em->flush();
 
-                if ($media_subtitle!=null) {
+                if ($media_subtitle != null) {
                     $media_subtitle->delete($this->container->getParameter('files_directory'));
                     $em->remove($media_subtitle);
                     $em->flush();
@@ -399,7 +465,7 @@ class EpisodeController extends Controller
             $em->remove($episode);
             $em->flush();
 
-            if ($media_episode!=null) {
+            if ($media_episode != null) {
                 $media_episode->delete($this->container->getParameter('files_directory'));
                 $em->remove($media_episode);
                 $em->flush();
@@ -411,14 +477,14 @@ class EpisodeController extends Controller
             foreach ($season->getEpisodes() as $key => $value) {
                 $views += $value->getViews();
             }
-            
+
             $serie->setViews($views);
             $em->flush();
 
-            $episodes =  $em->getRepository("AppBundle:Episode")->findBy(array("season"=>$season),array("position"=>"asc"));
+            $episodes = $em->getRepository("AppBundle:Episode")->findBy(array("season" => $season), array("position" => "asc"));
             $position = 0;
             foreach ($episodes as $key => $ep) {
-                $position ++;
+                $position++;
                 $ep->setPosition($position);
                 $em->flush();
             }
@@ -426,8 +492,7 @@ class EpisodeController extends Controller
             $this->addFlash('success', 'Operation has been done successfully');
             return $this->redirect($url);
         }
-        return $this->render('AppBundle:Episode:delete.html.twig',array("url"=>$url,"form"=>$form->createView()));
+        return $this->render('AppBundle:Episode:delete.html.twig', array("url" => $url, "form" => $form->createView()));
     }
 
 }
-?>

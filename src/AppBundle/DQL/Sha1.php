@@ -10,6 +10,9 @@ class Sha1 extends FunctionNode
 {
     public $value;
 
+    /**
+     * @param Parser $parser
+     */
     public function parse(Parser $parser)
     {
         $parser->match(Lexer::T_IDENTIFIER);
@@ -18,6 +21,10 @@ class Sha1 extends FunctionNode
         $parser->match(Lexer::T_CLOSE_PARENTHESIS);
     }
 
+    /**
+     * @param SqlWalker $sqlWalker
+     * @return string
+     */
     public function getSql(SqlWalker $sqlWalker)
     {
 

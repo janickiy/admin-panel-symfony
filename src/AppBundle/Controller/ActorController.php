@@ -1,5 +1,7 @@
-<?php 
+<?php
+
 namespace AppBundle\Controller;
+
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use AppBundle\Entity\Actor;
 use MediaBundle\Entity\Media;
@@ -17,53 +19,65 @@ use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 
 class ActorController extends Controller
 {
-    public function api_allAction(Request $request,$search,$page,$token)
+    /**
+     * @param Request $request
+     * @param $search
+     * @param $page
+     * @param $token
+     * @return Response
+     */
+    public function api_allAction(Request $request, $search, $page, $token)
     {
-        if ($token!=$this->container->getParameter('token_app')) {
-            throw new NotFoundHttpException("Page not found");  
+        if ($token != $this->container->getParameter('token_app')) {
+            throw new NotFoundHttpException("Page not found");
         }
-        $em=$this->getDoctrine()->getManager();
+        $em = $this->getDoctrine()->getManager();
         $imagineCacheManager = $this->get('liip_imagine.cache.manager');
-        $list=array();
+        $list = array();
         $nombre = 30;
         $repository = $em->getRepository('AppBundle:Actor');
         $query_builder = $repository->createQueryBuilder('A')
-            ->select(array("A.id","A.name","A.bio","A.height","A.born","A.type","m.url as image","m.extension as extension","SUM(P.views) as test"))
+            ->select(array("A.id", "A.name", "A.bio", "A.height", "A.born", "A.type", "m.url as image", "m.extension as extension", "SUM(P.views) as test"))
             ->leftJoin('A.roles', 'G')
             ->leftJoin('G.poster', 'P')
             ->leftJoin('A.media', 'm')
             ->groupBy('A.id')
             ->groupBy('A.id')
-            ->orderBy('test',"DESC")
+            ->orderBy('test', "DESC")
             ->setFirstResult($nombre * $page)
             ->setMaxResults($nombre);
-           
-        if($search!="null"){
-            $query_builder->where("A.name like '%".$search."%'");
-            $query=$query_builder->getQuery();
-        }else{
-            $query=$query_builder->getQuery();
+
+        if ($search != "null") {
+            $query_builder->where("A.name like '%" . $search . "%'");
+            $query = $query_builder->getQuery();
+        } else {
+            $query = $query_builder->getQuery();
         }
         $actors = $query->getResult();
 
         foreach ($actors as $key => $actor) {
-            $s["id"]=$actor["id"];
-            $s["type"]=$actor["type"];
-            $s["name"]=$actor["name"];
-            $s["bio"]=$actor["bio"];
-            $s["height"]=$actor["height"];
-            $s["born"]=$actor["born"];
-            $media =  new Media();
-            $s["image"]=$imagineCacheManager->getBrowserPath("uploads/".$actor["extension"]."/".$actor["image"], 'actor_thumb');
-            $list[]=$s;
+            $s["id"] = $actor["id"];
+            $s["type"] = $actor["type"];
+            $s["name"] = $actor["name"];
+            $s["bio"] = $actor["bio"];
+            $s["height"] = $actor["height"];
+            $s["born"] = $actor["born"];
+            $media = new Media();
+            $s["image"] = $imagineCacheManager->getBrowserPath("uploads/" . $actor["extension"] . "/" . $actor["image"], 'actor_thumb');
+            $list[] = $s;
         }
-        header('Content-Type: application/json'); 
+        header('Content-Type: application/json');
         $encoders = array(new XmlEncoder(), new JsonEncoder());
         $normalizers = array(new ObjectNormalizer());
         $serializer = new Serializer($normalizers, $encoders);
-        $jsonContent=$serializer->serialize($list, 'json');
+        $jsonContent = $serializer->serialize($list, 'json');
         return new Response($jsonContent);
     }
+
+    /**
+     * @param Request $request
+     * @return mixed
+     */
     public function indexAction(Request $request)
     {
 
@@ -85,50 +99,60 @@ class ActorController extends Controller
         $actors_count = $em->getRepository('AppBundle:Actor')->count();
         return $this->render('AppBundle:Actor:index.html.twig', array("actors_count" => $actors_count, "actors" => $actors));
     }
-    
+
+    /**
+     * @param Request $request
+     * @return mixed
+     */
     public function addAction(Request $request)
     {
-        $actor= new Actor();
-        $form = $this->createForm(ActorType::class,$actor);
-        $em=$this->getDoctrine()->getManager();
+        $actor = new Actor();
+        $form = $this->createForm(ActorType::class, $actor);
+        $em = $this->getDoctrine()->getManager();
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-                if( $actor->getFile()!=null ){
-                    $media= new Media();
-                    $media->setFile($actor->getFile());
-                    $media->upload($this->container->getParameter('files_directory'));
-                    $em->persist($media);
-                    $em->flush();
-                    $actor->setMedia($media);
-                    $em->persist($actor);
-                    $em->flush();
-                    $this->addFlash('success', 'Operation has been done successfully');
-                    return $this->redirect($this->generateUrl('app_actor_index'));
-                }else{
-                    $error = new FormError("Required image file");
-                    $form->get('file')->addError($error);
-                }
-       }
-       return $this->render("AppBundle:Actor:add.html.twig",array("form"=>$form->createView()));
+            if ($actor->getFile() != null) {
+                $media = new Media();
+                $media->setFile($actor->getFile());
+                $media->upload($this->container->getParameter('files_directory'));
+                $em->persist($media);
+                $em->flush();
+                $actor->setMedia($media);
+                $em->persist($actor);
+                $em->flush();
+                $this->addFlash('success', 'Operation has been done successfully');
+                return $this->redirect($this->generateUrl('app_actor_index'));
+            } else {
+                $error = new FormError("Required image file");
+                $form->get('file')->addError($error);
+            }
+        }
+        return $this->render("AppBundle:Actor:add.html.twig", array("form" => $form->createView()));
     }
 
-    public function deleteAction($id,Request $request){
-        $em=$this->getDoctrine()->getManager();
+    /**
+     * @param $id
+     * @param Request $request
+     * @return mixed
+     */
+    public function deleteAction($id, Request $request)
+    {
+        $em = $this->getDoctrine()->getManager();
 
         $actor = $em->getRepository("AppBundle:Actor")->find($id);
-        if($actor==null){
+        if ($actor == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        $form=$this->createFormBuilder(array('id' => $id))
+        $form = $this->createFormBuilder(array('id' => $id))
             ->add('id', HiddenType::class)
             ->add('Yes', SubmitType::class)
             ->getForm();
         $form->handleRequest($request);
-        if($form->isSubmitted() && $form->isValid()) {
+        if ($form->isSubmitted() && $form->isValid()) {
             $media_old = $actor->getMedia();
             $em->remove($actor);
             $em->flush();
-            if( $media_old!=null ){
+            if ($media_old != null) {
                 $media_old->delete($this->container->getParameter('files_directory'));
                 $em->remove($media_old);
                 $em->flush();
@@ -137,21 +161,27 @@ class ActorController extends Controller
             $this->addFlash('success', 'Operation has been done successfully');
             return $this->redirect($this->generateUrl('app_actor_index'));
         }
-        return $this->render('AppBundle:Actor:delete.html.twig',array("form"=>$form->createView()));
+        return $this->render('AppBundle:Actor:delete.html.twig', array("form" => $form->createView()));
     }
-    public function editAction(Request $request,$id)
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function editAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $actor=$em->getRepository("AppBundle:Actor")->find($id);
-        if ($actor==null) {
+        $em = $this->getDoctrine()->getManager();
+        $actor = $em->getRepository("AppBundle:Actor")->find($id);
+        if ($actor == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        $form = $this->createForm(ActorType::class,$actor);
+        $form = $this->createForm(ActorType::class, $actor);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            if( $actor->getFile()!=null ){
-                $media= new Media();
-                $media_old=$actor->getMedia();
+            if ($actor->getFile() != null) {
+                $media = new Media();
+                $media_old = $actor->getMedia();
                 $media->setFile($actor->getFile());
                 $media->upload($this->container->getParameter('files_directory'));
                 $em->persist($media);
@@ -165,9 +195,8 @@ class ActorController extends Controller
             $em->flush();
             $this->addFlash('success', 'Operation has been done successfully');
             return $this->redirect($this->generateUrl('app_actor_index'));
- 
+
         }
-        return $this->render("AppBundle:Actor:edit.html.twig",array("actor"=>$actor,"form"=>$form->createView()));
+        return $this->render("AppBundle:Actor:edit.html.twig", array("actor" => $actor, "form" => $form->createView()));
     }
 }
-?>

@@ -1,5 +1,7 @@
-<?php 
+<?php
+
 namespace AppBundle\Controller;
+
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use AppBundle\Entity\Channel;
 use AppBundle\Entity\Rate;
@@ -19,9 +21,15 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\FormError;
+
 class ChannelController extends Controller
 {
-    public function indexAction(Request $request) {
+    /**
+     * @param Request $request
+     * @return mixed
+     */
+    public function indexAction(Request $request)
+    {
 
         $em = $this->getDoctrine()->getManager();
         $q = " 1 = 1 ";
@@ -40,16 +48,30 @@ class ChannelController extends Controller
         $channels_count = $em->getRepository('AppBundle:Channel')->count();
         return $this->render('AppBundle:Channel:index.html.twig', array("channels_count" => $channels_count, "channels" => $channels));
     }
-    public function api_by_idAction(Request $request,$id)
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function api_by_idAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $channel=$em->getRepository("AppBundle:Channel")->find($id);
-        if ($channel==null) {
+        $em = $this->getDoctrine()->getManager();
+        $channel = $em->getRepository("AppBundle:Channel")->find($id);
+        if ($channel == null) {
             throw new NotFoundHttpException("Page not found");
         }
         return $this->render('AppBundle:Channel:api_one.html.php', array("channel" => $channel));
     }
-    public function api_randomAction(Request $request, $categories, $token) {
+
+    /**
+     * @param Request $request
+     * @param $categories
+     * @param $token
+     * @return mixed
+     */
+    public function api_randomAction(Request $request, $categories, $token)
+    {
         if ($token != $this->container->getParameter('token_app')) {
             throw new NotFoundHttpException("Page not found");
         }
@@ -59,7 +81,7 @@ class ChannelController extends Controller
         $repository = $em->getRepository('AppBundle:Channel');
         $query = $repository->createQueryBuilder('p')
             ->leftJoin('p.categories', 'g')
-            ->where("p.enabled = true",'g.id in (' . $categories . ')')
+            ->where("p.enabled = true", 'g.id in (' . $categories . ')')
             ->addSelect('RAND() as HIDDEN rand')
             ->orderBy('rand')
             ->setMaxResults($nombre)
@@ -67,178 +89,210 @@ class ChannelController extends Controller
         $channels = $query->getResult();
         return $this->render('AppBundle:Channel:api_all.html.php', array("channels" => $channels));
     }
-    public function api_by_filtres_tvAction(Request $request, $category,$country,$page,$order, $token) {
-        if ($token != $this->container->getParameter('token_app')) {
-            throw new NotFoundHttpException("Page not found");
-        }
-        $nombre = 30;
-        $em = $this->getDoctrine()->getManager();
-        $imagineCacheManager = $this->get('liip_imagine.cache.manager');
-        $repository = $em->getRepository('AppBundle:Channel');
-        if($category==0 and $country==0){
-            $query = $repository->createQueryBuilder('p')
-                ->where("p.enabled = true")
-                ->addOrderBy('p.'.$order, "desc")
-                ->addOrderBy('p.id', 'ASC')
-                ->setFirstResult($nombre * $page)
-                ->setMaxResults($nombre)
-                ->getQuery();         
-        } else if($category != 0 and $country == 0 ){
-            $query = $repository->createQueryBuilder('p')
-                ->leftJoin('p.categories', 'g')
-                ->where("p.enabled = true",'g.id = ' . $category)
-                ->addOrderBy('p.'.$order, "desc")
-                ->addOrderBy('p.id', 'ASC')
-                ->setFirstResult($nombre * $page)
-                ->setMaxResults($nombre)
-                ->getQuery();         
-        }  else if($category == 0 and $country != 0 ){
-            $query = $repository->createQueryBuilder('p')
-                ->leftJoin('p.countries', 'c')
-                ->where("p.enabled = true",'c.id = ' . $country)
-                ->addOrderBy('p.'.$order, "desc")
-                ->addOrderBy('p.id', 'ASC')
-                ->setFirstResult($nombre * $page)
-                ->setMaxResults($nombre)
-                ->getQuery();         
-        } else if($category != 0 and $country != 0 ){
-            $query = $repository->createQueryBuilder('p')
-                ->leftJoin('p.categories', 'cat')
-                ->leftJoin('p.countries', 'cou')
-                ->where("p.enabled = true",'cou.id = ' . $country,'cat.id = ' . $country)
-                ->addOrderBy('p.'.$order, "desc")
-                ->addOrderBy('p.id', 'ASC')
-                ->setFirstResult($nombre * $page)
-                ->setMaxResults($nombre)
-                ->getQuery();         
-        }  
-        $channels = $query->getResult();
-        return $this->render('AppBundle:Channel:api_all.html.php', array("channels" => $channels));
-    }
-    public function api_by_filtresAction(Request $request, $category,$country,$page, $token) {
-        if ($token != $this->container->getParameter('token_app')) {
-            throw new NotFoundHttpException("Page not found");
-        }
-        $nombre = 30;
-        $em = $this->getDoctrine()->getManager();
-        $imagineCacheManager = $this->get('liip_imagine.cache.manager');
-        $repository = $em->getRepository('AppBundle:Channel');
-        if($category==0 and $country==0){
-            $query = $repository->createQueryBuilder('p')
-                ->where("p.enabled = true")
-                ->addOrderBy('p.created', "desc")
-                ->addOrderBy('p.id', 'ASC')
-                ->setFirstResult($nombre * $page)
-                ->setMaxResults($nombre)
-                ->getQuery();         
-        } else if($category != 0 and $country == 0 ){
-            $query = $repository->createQueryBuilder('p')
-                ->leftJoin('p.categories', 'g')
-                ->where("p.enabled = true",'g.id = ' . $category)
-                ->addOrderBy('p.created', "desc")
-                ->addOrderBy('p.id', 'ASC')
-                ->setFirstResult($nombre * $page)
-                ->setMaxResults($nombre)
-                ->getQuery();         
-        }  else if($category == 0 and $country != 0 ){
-            $query = $repository->createQueryBuilder('p')
-                ->leftJoin('p.countries', 'c')
-                ->where("p.enabled = true",'c.id = ' . $country)
-                ->addOrderBy('p.created', "desc")
-                ->addOrderBy('p.id', 'ASC')
-                ->setFirstResult($nombre * $page)
-                ->setMaxResults($nombre)
-                ->getQuery();         
-        } else if($category != 0 and $country != 0 ){
-            $query = $repository->createQueryBuilder('p')
-                ->leftJoin('p.categories', 'cat')
-                ->leftJoin('p.countries', 'cou')
-                ->where("p.enabled = true",'cou.id = ' . $country,'cat.id = ' . $country)
-                ->addOrderBy('p.created', "desc")
-                ->addOrderBy('p.id', 'ASC')
-                ->setFirstResult($nombre * $page)
-                ->setMaxResults($nombre)
-                ->getQuery();         
-        }  
-        $channels = $query->getResult();
-        return $this->render('AppBundle:Channel:api_all.html.php', array("channels" => $channels));
-    }
 
-    public function ratingsAction(Request $request,$id)
+    /**
+     * @param Request $request
+     * @param $category
+     * @param $country
+     * @param $page
+     * @param $order
+     * @param $token
+     * @return mixed
+     */
+    public function api_by_filtres_tvAction(Request $request, $category, $country, $page, $order, $token)
     {
-        $em=$this->getDoctrine()->getManager();
-        $channel=$em->getRepository("AppBundle:Channel")->findOneBy(array("id"=>$id));
-        if ($channel==null) {
+        if ($token != $this->container->getParameter('token_app')) {
             throw new NotFoundHttpException("Page not found");
         }
-        $rates_1 = $em->getRepository('AppBundle:Rate')->findBy(array("channel"=>$channel,"value"=>1));
-        $rates_2 = $em->getRepository('AppBundle:Rate')->findBy(array("channel"=>$channel,"value"=>2));
-        $rates_3 = $em->getRepository('AppBundle:Rate')->findBy(array("channel"=>$channel,"value"=>3));
-        $rates_4 = $em->getRepository('AppBundle:Rate')->findBy(array("channel"=>$channel,"value"=>4));
-        $rates_5 = $em->getRepository('AppBundle:Rate')->findBy(array("channel"=>$channel,"value"=>5));
-        $rates = $em->getRepository('AppBundle:Rate')->findBy(array("channel"=>$channel));
+        $nombre = 30;
+        $em = $this->getDoctrine()->getManager();
+        $imagineCacheManager = $this->get('liip_imagine.cache.manager');
+        $repository = $em->getRepository('AppBundle:Channel');
+        if ($category == 0 and $country == 0) {
+            $query = $repository->createQueryBuilder('p')
+                ->where("p.enabled = true")
+                ->addOrderBy('p.' . $order, "desc")
+                ->addOrderBy('p.id', 'ASC')
+                ->setFirstResult($nombre * $page)
+                ->setMaxResults($nombre)
+                ->getQuery();
+        } else if ($category != 0 and $country == 0) {
+            $query = $repository->createQueryBuilder('p')
+                ->leftJoin('p.categories', 'g')
+                ->where("p.enabled = true", 'g.id = ' . $category)
+                ->addOrderBy('p.' . $order, "desc")
+                ->addOrderBy('p.id', 'ASC')
+                ->setFirstResult($nombre * $page)
+                ->setMaxResults($nombre)
+                ->getQuery();
+        } else if ($category == 0 and $country != 0) {
+            $query = $repository->createQueryBuilder('p')
+                ->leftJoin('p.countries', 'c')
+                ->where("p.enabled = true", 'c.id = ' . $country)
+                ->addOrderBy('p.' . $order, "desc")
+                ->addOrderBy('p.id', 'ASC')
+                ->setFirstResult($nombre * $page)
+                ->setMaxResults($nombre)
+                ->getQuery();
+        } else if ($category != 0 and $country != 0) {
+            $query = $repository->createQueryBuilder('p')
+                ->leftJoin('p.categories', 'cat')
+                ->leftJoin('p.countries', 'cou')
+                ->where("p.enabled = true", 'cou.id = ' . $country, 'cat.id = ' . $country)
+                ->addOrderBy('p.' . $order, "desc")
+                ->addOrderBy('p.id', 'ASC')
+                ->setFirstResult($nombre * $page)
+                ->setMaxResults($nombre)
+                ->getQuery();
+        }
+        $channels = $query->getResult();
+        return $this->render('AppBundle:Channel:api_all.html.php', array("channels" => $channels));
+    }
+
+    /**
+     * @param Request $request
+     * @param $category
+     * @param $country
+     * @param $page
+     * @param $token
+     * @return mixed
+     */
+    public function api_by_filtresAction(Request $request, $category, $country, $page, $token)
+    {
+        if ($token != $this->container->getParameter('token_app')) {
+            throw new NotFoundHttpException("Page not found");
+        }
+        $nombre = 30;
+        $em = $this->getDoctrine()->getManager();
+        $imagineCacheManager = $this->get('liip_imagine.cache.manager');
+        $repository = $em->getRepository('AppBundle:Channel');
+        if ($category == 0 and $country == 0) {
+            $query = $repository->createQueryBuilder('p')
+                ->where("p.enabled = true")
+                ->addOrderBy('p.created', "desc")
+                ->addOrderBy('p.id', 'ASC')
+                ->setFirstResult($nombre * $page)
+                ->setMaxResults($nombre)
+                ->getQuery();
+        } else if ($category != 0 and $country == 0) {
+            $query = $repository->createQueryBuilder('p')
+                ->leftJoin('p.categories', 'g')
+                ->where("p.enabled = true", 'g.id = ' . $category)
+                ->addOrderBy('p.created', "desc")
+                ->addOrderBy('p.id', 'ASC')
+                ->setFirstResult($nombre * $page)
+                ->setMaxResults($nombre)
+                ->getQuery();
+        } else if ($category == 0 and $country != 0) {
+            $query = $repository->createQueryBuilder('p')
+                ->leftJoin('p.countries', 'c')
+                ->where("p.enabled = true", 'c.id = ' . $country)
+                ->addOrderBy('p.created', "desc")
+                ->addOrderBy('p.id', 'ASC')
+                ->setFirstResult($nombre * $page)
+                ->setMaxResults($nombre)
+                ->getQuery();
+        } else if ($category != 0 and $country != 0) {
+            $query = $repository->createQueryBuilder('p')
+                ->leftJoin('p.categories', 'cat')
+                ->leftJoin('p.countries', 'cou')
+                ->where("p.enabled = true", 'cou.id = ' . $country, 'cat.id = ' . $country)
+                ->addOrderBy('p.created', "desc")
+                ->addOrderBy('p.id', 'ASC')
+                ->setFirstResult($nombre * $page)
+                ->setMaxResults($nombre)
+                ->getQuery();
+        }
+        $channels = $query->getResult();
+        return $this->render('AppBundle:Channel:api_all.html.php', array("channels" => $channels));
+    }
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function ratingsAction(Request $request, $id)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $channel = $em->getRepository("AppBundle:Channel")->findOneBy(array("id" => $id));
+        if ($channel == null) {
+            throw new NotFoundHttpException("Page not found");
+        }
+        $rates_1 = $em->getRepository('AppBundle:Rate')->findBy(array("channel" => $channel, "value" => 1));
+        $rates_2 = $em->getRepository('AppBundle:Rate')->findBy(array("channel" => $channel, "value" => 2));
+        $rates_3 = $em->getRepository('AppBundle:Rate')->findBy(array("channel" => $channel, "value" => 3));
+        $rates_4 = $em->getRepository('AppBundle:Rate')->findBy(array("channel" => $channel, "value" => 4));
+        $rates_5 = $em->getRepository('AppBundle:Rate')->findBy(array("channel" => $channel, "value" => 5));
+        $rates = $em->getRepository('AppBundle:Rate')->findBy(array("channel" => $channel));
 
 
-        $ratings["rate_1"]=sizeof($rates_1);
-        $ratings["rate_2"]=sizeof($rates_2);
-        $ratings["rate_3"]=sizeof($rates_3);
-        $ratings["rate_4"]=sizeof($rates_4);
-        $ratings["rate_5"]=sizeof($rates_5);
+        $ratings["rate_1"] = sizeof($rates_1);
+        $ratings["rate_2"] = sizeof($rates_2);
+        $ratings["rate_3"] = sizeof($rates_3);
+        $ratings["rate_4"] = sizeof($rates_4);
+        $ratings["rate_5"] = sizeof($rates_5);
 
 
-        $t = sizeof($rates_1) + sizeof($rates_2) +sizeof($rates_3)+ sizeof($rates_4) + sizeof($rates_5);
+        $t = sizeof($rates_1) + sizeof($rates_2) + sizeof($rates_3) + sizeof($rates_4) + sizeof($rates_5);
         if ($t == 0) {
-            $t=1;
+            $t = 1;
         }
-        $values["rate_1"]=(sizeof($rates_1)*100)/$t;
-        $values["rate_2"]=(sizeof($rates_2)*100)/$t;
-        $values["rate_3"]=(sizeof($rates_3)*100)/$t;
-        $values["rate_4"]=(sizeof($rates_4)*100)/$t;
-        $values["rate_5"]=(sizeof($rates_5)*100)/$t;
+        $values["rate_1"] = (sizeof($rates_1) * 100) / $t;
+        $values["rate_2"] = (sizeof($rates_2) * 100) / $t;
+        $values["rate_3"] = (sizeof($rates_3) * 100) / $t;
+        $values["rate_4"] = (sizeof($rates_4) * 100) / $t;
+        $values["rate_5"] = (sizeof($rates_5) * 100) / $t;
 
-        $total=0;
-        $count=0;
+        $total = 0;
+        $count = 0;
         foreach ($rates as $key => $r) {
-           $total+=$r->getValue();
-           $count++;
+            $total += $r->getValue();
+            $count++;
         }
-        $v=0;
+        $v = 0;
         if ($count != 0) {
-            $v=$total/$count;
+            $v = $total / $count;
         }
-        $rating=$v;
-        $count=$em->getRepository('AppBundle:Rate')->countByChannel($channel->getId());
-        
-        $em= $this->getDoctrine()->getManager();
-        $dql        = "SELECT c FROM AppBundle:Rate c  WHERE c.channel = ". $id ." ORDER BY c.created desc ";
-        $query      = $em->createQuery($dql);
-        $paginator  = $this->get('knp_paginator');
+        $rating = $v;
+        $count = $em->getRepository('AppBundle:Rate')->countByChannel($channel->getId());
+
+        $em = $this->getDoctrine()->getManager();
+        $dql = "SELECT c FROM AppBundle:Rate c  WHERE c.channel = " . $id . " ORDER BY c.created desc ";
+        $query = $em->createQuery($dql);
+        $paginator = $this->get('knp_paginator');
         $pagination = $paginator->paginate(
-        $query,
-        $request->query->getInt('page', 1),
+            $query,
+            $request->query->getInt('page', 1),
             10
         );
-        return $this->render("AppBundle:Channel:ratings.html.twig", array("pagination"=>$pagination,"count"=>$count,"rating"=>$rating,"ratings"=>$ratings,"values"=>$values,"channel" => $channel));
+        return $this->render("AppBundle:Channel:ratings.html.twig", array("pagination" => $pagination, "count" => $count, "rating" => $rating, "ratings" => $ratings, "values" => $values, "channel" => $channel));
 
     }
-    public function commentsAction(Request $request,$id)
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function commentsAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $channel=$em->getRepository("AppBundle:Channel")->findOneBy(array("id"=>$id));
-        if ($channel==null) {
+        $em = $this->getDoctrine()->getManager();
+        $channel = $em->getRepository("AppBundle:Channel")->findOneBy(array("id" => $id));
+        if ($channel == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        $em= $this->getDoctrine()->getManager();
-        $dql        = "SELECT c FROM AppBundle:Comment c  WHERE c.channel = ". $id ." ORDER BY c.created desc ";
-        $query      = $em->createQuery($dql);
-        $paginator  = $this->get('knp_paginator');
+        $em = $this->getDoctrine()->getManager();
+        $dql = "SELECT c FROM AppBundle:Comment c  WHERE c.channel = " . $id . " ORDER BY c.created desc ";
+        $query = $em->createQuery($dql);
+        $paginator = $this->get('knp_paginator');
         $pagination = $paginator->paginate(
-        $query,
-        $request->query->getInt('page', 1),
+            $query,
+            $request->query->getInt('page', 1),
             10
         );
-       $count=$em->getRepository('AppBundle:Comment')->countByChannel($channel->getId());
-        
+        $count = $em->getRepository('AppBundle:Comment')->countByChannel($channel->getId());
+
         return $this->render('AppBundle:Channel:comments.html.twig',
             array(
                 'pagination' => $pagination,
@@ -247,7 +301,14 @@ class ChannelController extends Controller
             )
         );
     }
-    public function api_add_rateAction(Request $request,$token) {
+
+    /**
+     * @param Request $request
+     * @param $token
+     * @return Response
+     */
+    public function api_add_rateAction(Request $request, $token)
+    {
         if ($token != $this->container->getParameter('token_app')) {
             throw new NotFoundHttpException("Page not found");
         }
@@ -277,7 +338,7 @@ class ChannelController extends Controller
                 } else {
                     $rate->setValue($value);
                     $em->flush();
-                    $message = "Your Ratting has been edit"; 
+                    $message = "Your Ratting has been edit";
                 }
                 $rates = $em->getRepository('AppBundle:Rate')->findBy(array("channel" => $channel_obj));
 
@@ -291,12 +352,12 @@ class ChannelController extends Controller
                 if ($count != 0) {
                     $v = $total / $count;
                 }
-                $v2 = number_format((float) $v, 1, '.', '');
+                $v2 = number_format((float)$v, 1, '.', '');
                 $errors[] = array("name" => "rate", "value" => $v2);
-                
+
                 $channel_obj->setRating($v2);
                 $em->flush();
-            }else {
+            } else {
                 $code = "500";
                 $message = "Sorry, your rate could not be added at this time";
 
@@ -316,90 +377,101 @@ class ChannelController extends Controller
         $jsonContent = $serializer->serialize($error, 'json');
         return new Response($jsonContent);
     }
+
+    /**
+     * @param Request $request
+     * @return mixed
+     */
     public function addAction(Request $request)
     {
-        $channel= new Channel();
-        $form = $this->createForm(ChannelType::class,$channel);
-        $em=$this->getDoctrine()->getManager();
+        $channel = new Channel();
+        $form = $this->createForm(ChannelType::class, $channel);
+        $em = $this->getDoctrine()->getManager();
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-                if( $channel->getFile()!=null ){
-                    $media= new Media();
-                    $media->setFile($channel->getFile());
-                    $media->upload($this->container->getParameter('files_directory'));
-                    $em->persist($media);
-                    $em->flush();
-                    $channel->setMedia($media);
-                    $em->persist($channel);
-                    $em->flush();
-                    if(strlen($channel->getSourceurl())>1 ){
-                       $choices = array(
-                            1 => "youtube",
-                            2 => "m3u8",
-                            3 => "mov",
-                            4 => "mp4",
-                            6 => "mkv",
-                            7 => "webm",
-                            8 => "embed",
-                        );
+            if ($channel->getFile() != null) {
+                $media = new Media();
+                $media->setFile($channel->getFile());
+                $media->upload($this->container->getParameter('files_directory'));
+                $em->persist($media);
+                $em->flush();
+                $channel->setMedia($media);
+                $em->persist($channel);
+                $em->flush();
+                if (strlen($channel->getSourceurl()) > 1) {
+                    $choices = array(
+                        1 => "youtube",
+                        2 => "m3u8",
+                        3 => "mov",
+                        4 => "mp4",
+                        6 => "mkv",
+                        7 => "webm",
+                        8 => "embed",
+                    );
 
-                        $source = new  Source();
-                        $source->setType($choices[$channel->getSourcetype()]);
-                        $source->setUrl($channel->getSourceurl());
-                        $source->setChannel($channel);
-                        $em->persist($source);
-                        $em->flush();
-                    }
-                    
-                    $this->addFlash('success', 'Operation has been done successfully');
-                    return $this->redirect($this->generateUrl('app_channel_sources',array("id"=>$channel->getId())));
-                }else{
-                    $error = new FormError("Required image file");
-                    $form->get('file')->addError($error);
+                    $source = new  Source();
+                    $source->setType($choices[$channel->getSourcetype()]);
+                    $source->setUrl($channel->getSourceurl());
+                    $source->setChannel($channel);
+                    $em->persist($source);
+                    $em->flush();
                 }
-       }
-       return $this->render("AppBundle:Channel:add.html.twig",array("form"=>$form->createView()));
+
+                $this->addFlash('success', 'Operation has been done successfully');
+                return $this->redirect($this->generateUrl('app_channel_sources', array("id" => $channel->getId())));
+            } else {
+                $error = new FormError("Required image file");
+                $form->get('file')->addError($error);
+            }
+        }
+        return $this->render("AppBundle:Channel:add.html.twig", array("form" => $form->createView()));
     }
 
-    public function deleteAction($id,Request $request){
-        $em=$this->getDoctrine()->getManager();
+    /**
+     * @param $id
+     * @param Request $request
+     * @return mixed
+     */
+    public function deleteAction($id, Request $request)
+    {
+        $em = $this->getDoctrine()->getManager();
 
         $channel = $em->getRepository("AppBundle:Channel")->find($id);
-        if($channel==null){
+        if ($channel == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        $form=$this->createFormBuilder(array('id' => $id))
+        $form = $this->createFormBuilder(array('id' => $id))
             ->add('id', HiddenType::class)
             ->add('Yes', SubmitType::class)
             ->getForm();
         $form->handleRequest($request);
-        if($form->isSubmitted() && $form->isValid()) {
+        if ($form->isSubmitted() && $form->isValid()) {
             foreach ($channel->getSources() as $key => $source) {
                 $media_source = $source->getMedia();
                 $em->remove($source);
                 $em->flush();
-                if( $media_source!=null ){
+                if ($media_source != null) {
                     $media_source->delete($this->container->getParameter('files_directory'));
                     $em->remove($media_source);
                     $em->flush();
                 }
             }
-            $slide = $em->getRepository("AppBundle:Slide")->findOneBy(array("channel"=>$channel));
-            if ($slide!=null) {
-                    $media_slide = $slide->getMedia();
-                    $em->remove($slide);
+            $slide = $em->getRepository("AppBundle:Slide")->findOneBy(array("channel" => $channel));
+            if ($slide != null) {
+                $media_slide = $slide->getMedia();
+                $em->remove($slide);
+                $em->flush();
+                if ($media_slide != null) {
+                    $media_slide->delete($this->container->getParameter('files_directory'));
+                    $em->remove($media_slide);
                     $em->flush();
-                    if( $media_slide!=null ){
-                        $media_slide->delete($this->container->getParameter('files_directory'));
-                        $em->remove($media_slide);
-                        $em->flush();
-                    }
+                }
             }
 
             $media_old = $channel->getMedia();
             $em->remove($channel);
             $em->flush();
-            if( $media_old!=null ){
+            if ($media_old != null) {
                 $media_old->delete($this->container->getParameter('files_directory'));
                 $em->remove($media_old);
                 $em->flush();
@@ -408,21 +480,27 @@ class ChannelController extends Controller
             $this->addFlash('success', 'Operation has been done successfully');
             return $this->redirect($this->generateUrl('app_channel_index'));
         }
-        return $this->render('AppBundle:Channel:delete.html.twig',array("form"=>$form->createView()));
+        return $this->render('AppBundle:Channel:delete.html.twig', array("form" => $form->createView()));
     }
-    public function editAction(Request $request,$id)
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function editAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $channel=$em->getRepository("AppBundle:Channel")->find($id);
-        if ($channel==null) {
+        $em = $this->getDoctrine()->getManager();
+        $channel = $em->getRepository("AppBundle:Channel")->find($id);
+        if ($channel == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        $form = $this->createForm(ChannelEditType::class,$channel);
+        $form = $this->createForm(ChannelEditType::class, $channel);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            if( $channel->getFile()!=null ){
-                $media= new Media();
-                $media_old=$channel->getMedia();
+            if ($channel->getFile() != null) {
+                $media = new Media();
+                $media_old = $channel->getMedia();
                 $media->setFile($channel->getFile());
                 $media->upload($this->container->getParameter('files_directory'));
                 $em->persist($media);
@@ -436,27 +514,40 @@ class ChannelController extends Controller
             $em->flush();
             $this->addFlash('success', 'Operation has been done successfully');
             return $this->redirect($this->generateUrl('app_channel_index'));
- 
+
         }
-        return $this->render("AppBundle:Channel:edit.html.twig",array("channel"=>$channel,"form"=>$form->createView()));
+        return $this->render("AppBundle:Channel:edit.html.twig", array("channel" => $channel, "form" => $form->createView()));
     }
-    public function sourcesAction(Request $request,$id)
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function sourcesAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $channel=$em->getRepository("AppBundle:Channel")->find($id);
-        if ($channel==null) {
+        $em = $this->getDoctrine()->getManager();
+        $channel = $em->getRepository("AppBundle:Channel")->find($id);
+        if ($channel == null) {
             throw new NotFoundHttpException("Page not found");
         }
 
-        return $this->render("AppBundle:Channel:sources.html.twig",array("channel"=>$channel));
+        return $this->render("AppBundle:Channel:sources.html.twig", array("channel" => $channel));
     }
-    public function api_add_shareAction(Request $request, $token) {
+
+    /**
+     * @param Request $request
+     * @param $token
+     * @return Response
+     */
+    public function api_add_shareAction(Request $request, $token)
+    {
         if ($token != $this->container->getParameter('token_app')) {
             throw new NotFoundHttpException("Page not found");
         }
         $em = $this->getDoctrine()->getManager();
         $id = $request->get("id");
-        $channel = $em->getRepository("AppBundle:Channel")->findOneBy(array("id"=>$id,"enabled"=>true));
+        $channel = $em->getRepository("AppBundle:Channel")->findOneBy(array("id" => $id, "enabled" => true));
         if ($channel == null) {
             throw new NotFoundHttpException("Page not found");
         }
@@ -468,13 +559,20 @@ class ChannelController extends Controller
         $jsonContent = $serializer->serialize($channel->getShares(), 'json');
         return new Response($jsonContent);
     }
-    public function api_add_viewAction(Request $request, $token) {
+
+    /**
+     * @param Request $request
+     * @param $token
+     * @return Response
+     */
+    public function api_add_viewAction(Request $request, $token)
+    {
         if ($token != $this->container->getParameter('token_app')) {
             throw new NotFoundHttpException("Page not found");
         }
         $em = $this->getDoctrine()->getManager();
         $id = $request->get("id");
-        $channel = $em->getRepository("AppBundle:Channel")->findOneBy(array("id"=>$id,"enabled"=>true));
+        $channel = $em->getRepository("AppBundle:Channel")->findOneBy(array("id" => $id, "enabled" => true));
         if ($channel == null) {
             throw new NotFoundHttpException("Page not found");
         }
@@ -486,7 +584,14 @@ class ChannelController extends Controller
         $jsonContent = $serializer->serialize($channel->getViews(), 'json');
         return new Response($jsonContent);
     }
-    public function shareAction(Request $request, $id) {
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function shareAction(Request $request, $id)
+    {
         $em = $this->getDoctrine()->getManager();
         $channel = $em->getRepository("AppBundle:Channel")->find($id);
         $setting = $em->getRepository("AppBundle:Settings")->findOneBy(array());
@@ -495,22 +600,27 @@ class ChannelController extends Controller
         }
         return $this->render("AppBundle:Channel:share.html.twig", array("channel" => $channel, "setting" => $setting));
     }
-        public function api_reviewsAction($id,$token)
-    {
-        if ($token!=$this->container->getParameter('token_app')) {
-            throw new NotFoundHttpException("Page not found");  
-        }
-        $em=$this->getDoctrine()->getManager();
 
-        $channel=$em->getRepository('AppBundle:Channel')->find($id);
-        $reviews=array();
-        if ($channel!=null) {
-            $reviews=$em->getRepository('AppBundle:Rate')->findBy(array("channel"=>$channel));
+    /**
+     * @param $id
+     * @param $token
+     * @return mixed
+     */
+    public function api_reviewsAction($id, $token)
+    {
+        if ($token != $this->container->getParameter('token_app')) {
+            throw new NotFoundHttpException("Page not found");
+        }
+        $em = $this->getDoctrine()->getManager();
+
+        $channel = $em->getRepository('AppBundle:Channel')->find($id);
+        $reviews = array();
+        if ($channel != null) {
+            $reviews = $em->getRepository('AppBundle:Rate')->findBy(array("channel" => $channel));
         }
 
         return $this->render('AppBundle:Channel:api_reviews.html.php',
             array('reviews' => $reviews)
-        );  
+        );
     }
 }
-?>

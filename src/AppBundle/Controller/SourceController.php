@@ -1,5 +1,7 @@
-<?php 
+<?php
+
 namespace AppBundle\Controller;
+
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use AppBundle\Entity\Source;
 use MediaBundle\Entity\Media;
@@ -19,37 +21,42 @@ use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 
 class SourceController extends Controller
 {
- public function trailerAction(Request $request,$id)
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function trailerAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $source=$em->getRepository("AppBundle:Source")->findOneBy(array("id"=>$id,"episode"=>null));
-        if ($source==null) {
+        $em = $this->getDoctrine()->getManager();
+        $source = $em->getRepository("AppBundle:Source")->findOneBy(array("id" => $id, "episode" => null));
+        if ($source == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        $poster=$source->getPoster();
+        $poster = $source->getPoster();
 
-        if ($poster==null) {
-            $poster=$em->getRepository("AppBundle:Poster")->findOneBy(array("trailer"=>$source));
-            if($poster->getType()=="movie")
-                $rout  = "app_movie_trailer";
+        if ($poster == null) {
+            $poster = $em->getRepository("AppBundle:Poster")->findOneBy(array("trailer" => $source));
+            if ($poster->getType() == "movie")
+                $rout = "app_movie_trailer";
             else
-                $rout  = "app_serie_trailer";
+                $rout = "app_serie_trailer";
 
-        }else{
+        } else {
             throw new NotFoundHttpException("Page not found");
         }
         $choices = array(
-            "youtube" => 1 ,
-            "m3u8" => 2 ,
-            "mov" => 3 ,
-            "mp4"  => 4 ,
-            "mkv"  => 6 ,
+            "youtube" => 1,
+            "m3u8" => 2,
+            "mov" => 3,
+            "mp4" => 4,
+            "mkv" => 6,
             "webm" => 7,
             "embed" => 8,
-            "file" => 5 
+            "file" => 5
         );
         $source->setType($choices[$source->getType()]);
-        $form = $this->createForm(TrailerType::class,$source);
+        $form = $this->createForm(TrailerType::class, $source);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $choices = array(
@@ -62,12 +69,12 @@ class SourceController extends Controller
                 8 => "embed",
                 5 => "file"
             );
-            if ($source->getType()==5) {
-                if ($source->getFile()!=null ){
-                    $media_old=$source->getMedia();
+            if ($source->getType() == 5) {
+                if ($source->getFile() != null) {
+                    $media_old = $source->getMedia();
 
 
-                    $sourcemedia= new Media();
+                    $sourcemedia = new Media();
                     $sourcemedia->setFile($source->getFile());
                     $sourcemedia->upload($this->container->getParameter('files_directory'));
                     $em->persist($sourcemedia);
@@ -76,16 +83,16 @@ class SourceController extends Controller
                     $source->setType($choices[$source->getType()]);
                     $source->setMedia($sourcemedia);
                     $source->setUrl(null);
-                    $em->flush();  
+                    $em->flush();
                     if ($media_old) {
                         $media_old->delete($this->container->getParameter('files_directory'));
                         $em->remove($media_old);
-                        $em->flush();        
+                        $em->flush();
                     }
                 }
-            }else{
-                if(strlen($source->getUrl())>1 ){
-                    $media_old=$source->getMedia();
+            } else {
+                if (strlen($source->getUrl()) > 1) {
+                    $media_old = $source->getMedia();
 
                     $source->setMedia(null);
                     $source->setType($choices[$source->getType()]);
@@ -94,52 +101,57 @@ class SourceController extends Controller
                     if ($media_old) {
                         $media_old->delete($this->container->getParameter('files_directory'));
                         $em->remove($media_old);
-                        $em->flush();        
+                        $em->flush();
                     }
                 }
             }
 
 
             $this->addFlash('success', 'Operation has been done successfully');
-            return $this->redirect($this->generateUrl( $rout,array("id"=>$poster->getId())));
+            return $this->redirect($this->generateUrl($rout, array("id" => $poster->getId())));
         }
-        return $this->render("AppBundle:Source:trailer.html.twig",array("rout"=> $rout,"poster"=>$poster,"form"=>$form->createView()));
+        return $this->render("AppBundle:Source:trailer.html.twig", array("rout" => $rout, "poster" => $poster, "form" => $form->createView()));
     }
 
-    public function editAction(Request $request,$id)
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function editAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $source=$em->getRepository("AppBundle:Source")->findOneBy(array("id"=>$id,"episode"=>null));
-        if ($source==null) {
+        $em = $this->getDoctrine()->getManager();
+        $source = $em->getRepository("AppBundle:Source")->findOneBy(array("id" => $id, "episode" => null));
+        if ($source == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        $poster=$source->getPoster();
+        $poster = $source->getPoster();
 
-        if ($poster==null) {
-            $poster=$em->getRepository("AppBundle:Poster")->findOneBy(array("trailer"=>$source));
-            if($poster->getType()=="movie")
-                $rout  = "app_movie_trailer";
+        if ($poster == null) {
+            $poster = $em->getRepository("AppBundle:Poster")->findOneBy(array("trailer" => $source));
+            if ($poster->getType() == "movie")
+                $rout = "app_movie_trailer";
             else
-                $rout  = "app_serie_trailer";
+                $rout = "app_serie_trailer";
 
-        }else{
-            if($poster->getType()=="movie")
-                $rout  = "app_movie_sources";
+        } else {
+            if ($poster->getType() == "movie")
+                $rout = "app_movie_sources";
             else
-                $rout  = "app_serie_sources";
+                $rout = "app_serie_sources";
         }
         $choices = array(
-            "youtube" => 1 ,
-            "m3u8" => 2 ,
-            "mov" => 3 ,
-            "mp4"  => 4 ,
-            "mkv"  => 6 ,
+            "youtube" => 1,
+            "m3u8" => 2,
+            "mov" => 3,
+            "mp4" => 4,
+            "mkv" => 6,
             "webm" => 7,
             "embed" => 8,
-            "file" => 5 
+            "file" => 5
         );
         $source->setType($choices[$source->getType()]);
-        $form = $this->createForm(SourceType::class,$source);
+        $form = $this->createForm(SourceType::class, $source);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $choices = array(
@@ -152,12 +164,12 @@ class SourceController extends Controller
                 8 => "embed",
                 5 => "file"
             );
-            if ($source->getType()==5) {
-                if ($source->getFile()!=null ){
-                    $media_old=$source->getMedia();
+            if ($source->getType() == 5) {
+                if ($source->getFile() != null) {
+                    $media_old = $source->getMedia();
 
 
-                    $sourcemedia= new Media();
+                    $sourcemedia = new Media();
                     $sourcemedia->setFile($source->getFile());
                     $sourcemedia->upload($this->container->getParameter('files_directory'));
                     $em->persist($sourcemedia);
@@ -166,16 +178,16 @@ class SourceController extends Controller
                     $source->setType($choices[$source->getType()]);
                     $source->setMedia($sourcemedia);
                     $source->setUrl(null);
-                    $em->flush();  
+                    $em->flush();
                     if ($media_old) {
                         $media_old->delete($this->container->getParameter('files_directory'));
                         $em->remove($media_old);
-                        $em->flush();        
+                        $em->flush();
                     }
                 }
-            }else{
-                if(strlen($source->getUrl())>1 ){
-                    $media_old=$source->getMedia();
+            } else {
+                if (strlen($source->getUrl()) > 1) {
+                    $media_old = $source->getMedia();
 
                     $source->setMedia(null);
                     $source->setType($choices[$source->getType()]);
@@ -184,40 +196,46 @@ class SourceController extends Controller
                     if ($media_old) {
                         $media_old->delete($this->container->getParameter('files_directory'));
                         $em->remove($media_old);
-                        $em->flush();        
+                        $em->flush();
                     }
                 }
             }
 
 
             $this->addFlash('success', 'Operation has been done successfully');
-            return $this->redirect($this->generateUrl( $rout,array("id"=>$poster->getId())));
+            return $this->redirect($this->generateUrl($rout, array("id" => $poster->getId())));
         }
-        return $this->render("AppBundle:Source:edit.html.twig",array("rout"=> $rout,"poster"=>$poster,"form"=>$form->createView()));
+        return $this->render("AppBundle:Source:edit.html.twig", array("rout" => $rout, "poster" => $poster, "form" => $form->createView()));
     }
-    public function edit_channelAction(Request $request,$id)
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function edit_channelAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $source=$em->getRepository("AppBundle:Source")->findOneBy(array("id"=>$id,"poster"=>null,"episode"=>null));
-        if ($source==null) {
+        $em = $this->getDoctrine()->getManager();
+        $source = $em->getRepository("AppBundle:Source")->findOneBy(array("id" => $id, "poster" => null, "episode" => null));
+        if ($source == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        $channel=$source->getChannel();
+        $channel = $source->getChannel();
 
-        $rout  = "app_channel_sources";
+        $rout = "app_channel_sources";
 
         $choices = array(
-            "youtube" => 1 ,
-            "m3u8" => 2 ,
-            "mov" => 3 ,
-            "mp4"  => 4 ,
-            "mkv"  => 6 ,
+            "youtube" => 1,
+            "m3u8" => 2,
+            "mov" => 3,
+            "mp4" => 4,
+            "mkv" => 6,
             "webm" => 7,
             "embed" => 8,
-            "file" => 5 
+            "file" => 5
         );
         $source->setType($choices[$source->getType()]);
-        $form = $this->createForm(SourceType::class,$source);
+        $form = $this->createForm(SourceType::class, $source);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $choices = array(
@@ -230,8 +248,8 @@ class SourceController extends Controller
                 4 => "mp4"
             );
 
-            if(strlen($source->getUrl())>1 ){
-                $media_old=$source->getMedia();
+            if (strlen($source->getUrl()) > 1) {
+                $media_old = $source->getMedia();
 
                 $source->setMedia(null);
                 $source->setType($choices[$source->getType()]);
@@ -240,40 +258,45 @@ class SourceController extends Controller
                 if ($media_old) {
                     $media_old->delete($this->container->getParameter('files_directory'));
                     $em->remove($media_old);
-                    $em->flush();        
+                    $em->flush();
                 }
             }
-            
 
 
             $this->addFlash('success', 'Operation has been done successfully');
-            return $this->redirect($this->generateUrl( $rout,array("id"=>$channel->getId())));
+            return $this->redirect($this->generateUrl($rout, array("id" => $channel->getId())));
         }
-        return $this->render("AppBundle:Source:edit_channel.html.twig",array("rout"=> $rout,"channel"=>$channel,"form"=>$form->createView()));
+        return $this->render("AppBundle:Source:edit_channel.html.twig", array("rout" => $rout, "channel" => $channel, "form" => $form->createView()));
     }
-    public function edit_episodeAction(Request $request,$id)
+
+    /**
+     * @param Request $request
+     * @param $id
+     * @return mixed
+     */
+    public function edit_episodeAction(Request $request, $id)
     {
-        $em=$this->getDoctrine()->getManager();
-        $source=$em->getRepository("AppBundle:Source")->findOneBy(array("id"=>$id,"poster"=>null));
-        if ($source==null) {
+        $em = $this->getDoctrine()->getManager();
+        $source = $em->getRepository("AppBundle:Source")->findOneBy(array("id" => $id, "poster" => null));
+        if ($source == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        $episode=$source->getEpisode();
+        $episode = $source->getEpisode();
 
-        $rout  = "app_episode_sources";
+        $rout = "app_episode_sources";
 
         $choices = array(
-            "youtube" => 1 ,
-            "m3u8" => 2 ,
-            "mov" => 3 ,
-            "mp4"  => 4 ,
-            "mkv"  => 6 ,
+            "youtube" => 1,
+            "m3u8" => 2,
+            "mov" => 3,
+            "mp4" => 4,
+            "mkv" => 6,
             "webm" => 7,
             "embed" => 8,
-            "file" => 5 
+            "file" => 5
         );
         $source->setType($choices[$source->getType()]);
-        $form = $this->createForm(SourceType::class,$source);
+        $form = $this->createForm(SourceType::class, $source);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $choices = array(
@@ -286,12 +309,12 @@ class SourceController extends Controller
                 8 => "embed",
                 5 => "file"
             );
-            if ($source->getType()==5) {
-                if ($source->getFile()!=null ){
-                    $media_old=$source->getMedia();
+            if ($source->getType() == 5) {
+                if ($source->getFile() != null) {
+                    $media_old = $source->getMedia();
 
 
-                    $sourcemedia= new Media();
+                    $sourcemedia = new Media();
                     $sourcemedia->setFile($source->getFile());
                     $sourcemedia->upload($this->container->getParameter('files_directory'));
                     $em->persist($sourcemedia);
@@ -300,16 +323,16 @@ class SourceController extends Controller
                     $source->setType($choices[$source->getType()]);
                     $source->setMedia($sourcemedia);
                     $source->setUrl(null);
-                    $em->flush();  
+                    $em->flush();
                     if ($media_old) {
                         $media_old->delete($this->container->getParameter('files_directory'));
                         $em->remove($media_old);
-                        $em->flush();        
+                        $em->flush();
                     }
                 }
-            }else{
-                if(strlen($source->getUrl())>1 ){
-                    $media_old=$source->getMedia();
+            } else {
+                if (strlen($source->getUrl()) > 1) {
+                    $media_old = $source->getMedia();
 
                     $source->setMedia(null);
                     $source->setType($choices[$source->getType()]);
@@ -318,31 +341,37 @@ class SourceController extends Controller
                     if ($media_old) {
                         $media_old->delete($this->container->getParameter('files_directory'));
                         $em->remove($media_old);
-                        $em->flush();        
+                        $em->flush();
                     }
                 }
             }
 
 
             $this->addFlash('success', 'Operation has been done successfully');
-            return $this->redirect($this->generateUrl( $rout,array("id"=>$episode->getId())));
+            return $this->redirect($this->generateUrl($rout, array("id" => $episode->getId())));
         }
-        return $this->render("AppBundle:Source:edit_episode.html.twig",array("rout"=> $rout,"episode"=>$episode,"form"=>$form->createView()));
+        return $this->render("AppBundle:Source:edit_episode.html.twig", array("rout" => $rout, "episode" => $episode, "form" => $form->createView()));
     }
-    public function addAction(Request $request,$poster)
+
+    /**
+     * @param Request $request
+     * @param $poster
+     * @return mixed
+     */
+    public function addAction(Request $request, $poster)
     {
-        $em=$this->getDoctrine()->getManager();
-        $poster=$em->getRepository("AppBundle:Poster")->find($poster);
-        if ($poster==null) {
+        $em = $this->getDoctrine()->getManager();
+        $poster = $em->getRepository("AppBundle:Poster")->find($poster);
+        if ($poster == null) {
             throw new NotFoundHttpException("Page not found");
         }
 
-            
-        $rout  = "app_movie_sources";
+
+        $rout = "app_movie_sources";
 
 
         $source = new Source();
-        $form = $this->createForm(SourceType::class,$source);
+        $form = $this->createForm(SourceType::class, $source);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
 
@@ -358,9 +387,9 @@ class SourceController extends Controller
             );
 
 
-            if ($source->getType()==5) {
-                if ($source->getFile()!=null ){
-                    $sourcemedia= new Media();
+            if ($source->getType() == 5) {
+                if ($source->getFile() != null) {
+                    $sourcemedia = new Media();
                     $sourcemedia->setFile($source->getFile());
                     $sourcemedia->upload($this->container->getParameter('files_directory'));
                     $em->persist($sourcemedia);
@@ -370,10 +399,10 @@ class SourceController extends Controller
                     $source->setMedia($sourcemedia);
                     $source->setPoster($poster);
                     $em->persist($source);
-                    $em->flush();  
+                    $em->flush();
                 }
-            }else{
-                if(strlen($source->getUrl())>1 ){
+            } else {
+                if (strlen($source->getUrl()) > 1) {
                     $source->setType($choices[$source->getType()]);
                     $em->persist($source);
                     $em->flush();
@@ -383,23 +412,29 @@ class SourceController extends Controller
 
             $em->flush();
             $this->addFlash('success', 'Operation has been done successfully');
-            return $this->redirect($this->generateUrl($rout,array("id"=>$poster->getId())));
+            return $this->redirect($this->generateUrl($rout, array("id" => $poster->getId())));
         }
-        return $this->render("AppBundle:Source:add.html.twig",array("rout"=>$rout,"poster"=>$poster,"form"=>$form->createView()));
+        return $this->render("AppBundle:Source:add.html.twig", array("rout" => $rout, "poster" => $poster, "form" => $form->createView()));
     }
-    public function add_channelAction(Request $request,$channel)
+
+    /**
+     * @param Request $request
+     * @param $channel
+     * @return mixed
+     */
+    public function add_channelAction(Request $request, $channel)
     {
-        $em=$this->getDoctrine()->getManager();
-        $channel=$em->getRepository("AppBundle:Channel")->find($channel);
-        if ($channel==null) {
+        $em = $this->getDoctrine()->getManager();
+        $channel = $em->getRepository("AppBundle:Channel")->find($channel);
+        if ($channel == null) {
             throw new NotFoundHttpException("Page not found");
         }
 
 
-        $rout  = "app_channel_sources";
-    
+        $rout = "app_channel_sources";
+
         $source = new Source();
-        $form = $this->createForm(SourceType::class,$source);
+        $form = $this->createForm(SourceType::class, $source);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
 
@@ -415,9 +450,9 @@ class SourceController extends Controller
             );
 
 
-            if ($source->getType()==5) {
-                if ($source->getFile()!=null ){
-                    $sourcemedia= new Media();
+            if ($source->getType() == 5) {
+                if ($source->getFile() != null) {
+                    $sourcemedia = new Media();
                     $sourcemedia->setFile($source->getFile());
                     $sourcemedia->upload($this->container->getParameter('files_directory'));
                     $em->persist($sourcemedia);
@@ -427,10 +462,10 @@ class SourceController extends Controller
                     $source->setMedia($sourcemedia);
                     $source->setChannel($channel);
                     $em->persist($source);
-                    $em->flush();  
+                    $em->flush();
                 }
-            }else{
-                if(strlen($source->getUrl())>1 ){
+            } else {
+                if (strlen($source->getUrl()) > 1) {
                     $source->setType($choices[$source->getType()]);
                     $em->persist($source);
                     $em->flush();
@@ -440,23 +475,29 @@ class SourceController extends Controller
 
             $em->flush();
             $this->addFlash('success', 'Operation has been done successfully');
-            return $this->redirect($this->generateUrl($rout,array("id"=>$channel->getId())));
+            return $this->redirect($this->generateUrl($rout, array("id" => $channel->getId())));
         }
-        return $this->render("AppBundle:Source:add_channel.html.twig",array("rout"=>$rout,"channel"=>$channel,"form"=>$form->createView()));
+        return $this->render("AppBundle:Source:add_channel.html.twig", array("rout" => $rout, "channel" => $channel, "form" => $form->createView()));
     }
-    public function add_episodeAction(Request $request,$episode)
+
+    /**
+     * @param Request $request
+     * @param $episode
+     * @return mixed
+     */
+    public function add_episodeAction(Request $request, $episode)
     {
-        $em=$this->getDoctrine()->getManager();
-        $episode=$em->getRepository("AppBundle:Episode")->find($episode);
-        if ($episode==null) {
+        $em = $this->getDoctrine()->getManager();
+        $episode = $em->getRepository("AppBundle:Episode")->find($episode);
+        if ($episode == null) {
             throw new NotFoundHttpException("Page not found");
         }
 
 
-        $rout  = "app_episode_sources";
-    
+        $rout = "app_episode_sources";
+
         $source = new Source();
-        $form = $this->createForm(SourceType::class,$source);
+        $form = $this->createForm(SourceType::class, $source);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
 
@@ -472,9 +513,9 @@ class SourceController extends Controller
             );
 
 
-            if ($source->getType()==5) {
-                if ($source->getFile()!=null ){
-                    $sourcemedia= new Media();
+            if ($source->getType() == 5) {
+                if ($source->getFile() != null) {
+                    $sourcemedia = new Media();
                     $sourcemedia->setFile($source->getFile());
                     $sourcemedia->upload($this->container->getParameter('files_directory'));
                     $em->persist($sourcemedia);
@@ -484,10 +525,10 @@ class SourceController extends Controller
                     $source->setMedia($sourcemedia);
                     $source->setEpisode($episode);
                     $em->persist($source);
-                    $em->flush();  
+                    $em->flush();
                 }
-            }else{
-                if(strlen($source->getUrl())>1 ){
+            } else {
+                if (strlen($source->getUrl()) > 1) {
                     $source->setType($choices[$source->getType()]);
                     $em->persist($source);
                     $em->flush();
@@ -497,53 +538,60 @@ class SourceController extends Controller
 
             $em->flush();
             $this->addFlash('success', 'Operation has been done successfully');
-            return $this->redirect($this->generateUrl($rout,array("id"=>$episode->getId())));
+            return $this->redirect($this->generateUrl($rout, array("id" => $episode->getId())));
         }
-        return $this->render("AppBundle:Source:add_episode.html.twig",array("rout"=>$rout,"episode"=>$episode,"form"=>$form->createView()));
+        return $this->render("AppBundle:Source:add_episode.html.twig", array("rout" => $rout, "episode" => $episode, "form" => $form->createView()));
     }
-    public function deleteAction($id,Request $request){
-        $em=$this->getDoctrine()->getManager();
+
+    /**
+     * @param $id
+     * @param Request $request
+     * @return mixed
+     */
+    public function deleteAction($id, Request $request)
+    {
+        $em = $this->getDoctrine()->getManager();
         $source = $em->getRepository("AppBundle:Source")->find($id);
-        if($source==null){
+        if ($source == null) {
             throw new NotFoundHttpException("Page not found");
         }
-        
-        $movie=$source->getPoster();
-        $episode=$source->getEpisode();
-        $channel=$source->getChannel();
 
-        if($movie!=null)
-           $url = $this->generateUrl("app_movie_sources",array("id"=>$movie->getId()));
-        if($episode!=null)
-           $url =  $this->generateUrl("app_episode_sources",array("id"=>$episode->getId()));
-        if($channel!=null)
-           $url =  $this->generateUrl("app_channel_sources",array("id"=>$channel->getId()));
+        $movie = $source->getPoster();
+        $episode = $source->getEpisode();
+        $channel = $source->getChannel();
 
-       if ($movie == null and $channel==null and $episode==null) {
-           $poster =$em->getRepository("AppBundle:Poster")->findOneBy(array("trailer"=>$source));
-           if ($poster->getType() == "movie") {
-                $url = $this->generateUrl("app_movie_trailer",array("id"=>$poster->getId()));
-           }else{
-                $url = $this->generateUrl("app_serie_trailer",array("id"=>$poster->getId()));
-           }
-       }
+        if ($movie != null)
+            $url = $this->generateUrl("app_movie_sources", array("id" => $movie->getId()));
+        if ($episode != null)
+            $url = $this->generateUrl("app_episode_sources", array("id" => $episode->getId()));
+        if ($channel != null)
+            $url = $this->generateUrl("app_channel_sources", array("id" => $channel->getId()));
 
-        $form=$this->createFormBuilder(array('id' => $id))
+        if ($movie == null and $channel == null and $episode == null) {
+            $poster = $em->getRepository("AppBundle:Poster")->findOneBy(array("trailer" => $source));
+            if ($poster->getType() == "movie") {
+                $url = $this->generateUrl("app_movie_trailer", array("id" => $poster->getId()));
+            } else {
+                $url = $this->generateUrl("app_serie_trailer", array("id" => $poster->getId()));
+            }
+        }
+
+        $form = $this->createFormBuilder(array('id' => $id))
             ->add('id', HiddenType::class)
             ->add('Yes', SubmitType::class)
             ->getForm();
 
         $form->handleRequest($request);
-        if($form->isSubmitted() && $form->isValid()) {
-            $movie =$em->getRepository("AppBundle:Poster")->findOneBy(array("trailer"=>$source));
+        if ($form->isSubmitted() && $form->isValid()) {
+            $movie = $em->getRepository("AppBundle:Poster")->findOneBy(array("trailer" => $source));
             if ($movie != null) {
-               $movie->setTrailer(null);
-               $em->flush();
+                $movie->setTrailer(null);
+                $em->flush();
             }
             $media_old = $source->getMedia();
             $em->remove($source);
             $em->flush();
-            if( $media_old!=null ){
+            if ($media_old != null) {
                 $media_old->delete($this->container->getParameter('files_directory'));
                 $em->remove($media_old);
                 $em->flush();
@@ -551,8 +599,7 @@ class SourceController extends Controller
             $this->addFlash('success', 'Operation has been done successfully');
             return $this->redirect($url);
         }
-        return $this->render('AppBundle:Source:delete.html.twig',array("url"=>$url,"form"=>$form->createView()));
+        return $this->render('AppBundle:Source:delete.html.twig', array("url" => $url, "form" => $form->createView()));
     }
 
 }
-?>

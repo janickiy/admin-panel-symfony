@@ -1,4 +1,5 @@
-<?php 
+<?php
+
 namespace UserBundle\Form;
 
 use Symfony\Component\Form\AbstractType;
@@ -12,12 +13,14 @@ class RegistrationType extends AbstractType
     {
         $builder->remove('username');
         $builder->add('name');
-        $builder->add('privacypolicy', CheckboxType::class,array());
+        $builder->add('privacypolicy', CheckboxType::class, array());
     }
+
     public function getParent()
     {
         return 'FOS\UserBundle\Form\Type\RegistrationFormType';
     }
+
     public function getBlockPrefix()
     {
         return 'app_user_registration';
